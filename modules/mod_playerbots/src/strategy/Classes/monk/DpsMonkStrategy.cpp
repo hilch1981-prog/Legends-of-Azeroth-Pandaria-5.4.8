@@ -15,7 +15,6 @@ NextAction** DpsMonkStrategy::getDefaultActions()
 void DpsMonkStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericMonkStrategy::InitTriggers(triggers);
-    triggers.push_back(new TriggerNode("touch of death", NextAction::array(0, new NextAction("touch of death", ACTION_HIGH + 8), nullptr)));
     triggers.push_back(new TriggerNode("tigereye brew ready", NextAction::array(0, new NextAction("tigereye brew", ACTION_HIGH + 6), nullptr)));
     triggers.push_back(new TriggerNode("rising sun kick", NextAction::array(0, new NextAction("rising sun kick", ACTION_HIGH + 5), nullptr)));
     triggers.push_back(new TriggerNode("fists of fury", NextAction::array(0, new NextAction("fists of fury", ACTION_HIGH + 4), nullptr)));
