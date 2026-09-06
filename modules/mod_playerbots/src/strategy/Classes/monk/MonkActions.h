@@ -104,6 +104,7 @@ class CastProvokeAction : public CastSpellAction
 {
 public:
     CastProvokeAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "provoke") {}
+    bool isUseful() override;
 };
 
 class CastBreathOfFireAction : public CastMeleeSpellAction
