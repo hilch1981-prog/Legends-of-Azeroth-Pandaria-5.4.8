@@ -34,6 +34,12 @@ bool CanCastMistHealWhileSoothing(PlayerbotAI* botAI, Player* bot, uint32 spellI
     if (!spellInfo)
         return false;
 
+    int32 powerEntryIndex = -1;
+    Powers powerType = spellInfo->GetPowerType(bot, &powerEntryIndex);
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask(), powerEntryIndex);
+    if (powerCost > 0 && bot->GetPower(powerType) < powerCost)
+        return false;
+
     if (target->IsImmunedToSpell(spellInfo, spellInfo->GetAllEffectsMechanicMask()))
         return false;
 
@@ -43,7 +49,7 @@ bool CanCastMistHealWhileSoothing(PlayerbotAI* botAI, Player* bot, uint32 spellI
     // The target core marks Surging Mist and Enveloping Mist as directly castable when
     // Soothing Mist is the current channel. Generic PlayerbotAI::CanCastSpell rejects all
     // casts while channeling before those Monk spell scripts can apply that exception, so
-    // defer the final power/range/script validation to PlayerbotAI::CastSpell/Spell::CheckCast.
+    // defer the final range/script validation to PlayerbotAI::CastSpell/Spell::CheckCast.
     return true;
 }
 }
