@@ -92,6 +92,13 @@ public:
     CastElusiveBrewAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "elusive brew") {}
 };
 
+class CastPurifyingBrewAction : public CastSpellAction
+{
+public:
+    CastPurifyingBrewAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "purifying brew") {}
+    std::string const GetTargetName() override { return "self target"; }
+};
+
 class CastProvokeAction : public CastSpellAction
 {
 public:

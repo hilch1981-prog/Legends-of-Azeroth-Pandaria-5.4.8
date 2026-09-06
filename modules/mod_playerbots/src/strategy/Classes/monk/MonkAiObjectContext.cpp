@@ -55,6 +55,9 @@ public:
         creators["fists of fury"] = &MonkTriggerFactoryInternal::fists_of_fury;
         creators["touch of death"] = &MonkTriggerFactoryInternal::touch_of_death;
         creators["spear hand strike"] = &MonkTriggerFactoryInternal::spear_hand_strike;
+        creators["no shuffle"] = &MonkTriggerFactoryInternal::no_shuffle;
+        creators["moderate stagger"] = &MonkTriggerFactoryInternal::moderate_stagger;
+        creators["heavy stagger"] = &MonkTriggerFactoryInternal::heavy_stagger;
         creators["cure poison"] = &MonkTriggerFactoryInternal::cure_poison;
         creators["cure disease"] = &MonkTriggerFactoryInternal::cure_disease;
         creators["cure poison on party"] = &MonkTriggerFactoryInternal::cure_poison_on_party;
@@ -67,6 +70,9 @@ private:
     static Trigger* fists_of_fury(PlayerbotAI* botAI) { return new FistsOfFuryTrigger(botAI); }
     static Trigger* touch_of_death(PlayerbotAI* botAI) { return new TouchOfDeathTrigger(botAI); }
     static Trigger* spear_hand_strike(PlayerbotAI* botAI) { return new SpearHandStrikeTrigger(botAI); }
+    static Trigger* no_shuffle(PlayerbotAI* botAI) { return new NoShuffleTrigger(botAI); }
+    static Trigger* moderate_stagger(PlayerbotAI* botAI) { return new ModerateStaggerTrigger(botAI); }
+    static Trigger* heavy_stagger(PlayerbotAI* botAI) { return new HeavyStaggerTrigger(botAI); }
     static Trigger* cure_poison(PlayerbotAI* botAI) { return new MonkCurePoisonTrigger(botAI); }
     static Trigger* cure_disease(PlayerbotAI* botAI) { return new MonkCureDiseaseTrigger(botAI); }
     static Trigger* cure_poison_on_party(PlayerbotAI* botAI) { return new MonkCurePoisonOnPartyTrigger(botAI); }
@@ -92,6 +98,7 @@ public:
         creators["keg smash"] = &MonkAiObjectContextInternal::keg_smash;
         creators["guard"] = &MonkAiObjectContextInternal::guard;
         creators["elusive brew"] = &MonkAiObjectContextInternal::elusive_brew;
+        creators["purifying brew"] = &MonkAiObjectContextInternal::purifying_brew;
         creators["provoke"] = &MonkAiObjectContextInternal::provoke;
         creators["breath of fire"] = &MonkAiObjectContextInternal::breath_of_fire;
         creators["soothing mist on party"] = &MonkAiObjectContextInternal::soothing_mist_on_party;
@@ -122,6 +129,7 @@ private:
     static Action* keg_smash(PlayerbotAI* botAI) { return new CastKegSmashAction(botAI); }
     static Action* guard(PlayerbotAI* botAI) { return new CastGuardAction(botAI); }
     static Action* elusive_brew(PlayerbotAI* botAI) { return new CastElusiveBrewAction(botAI); }
+    static Action* purifying_brew(PlayerbotAI* botAI) { return new CastPurifyingBrewAction(botAI); }
     static Action* provoke(PlayerbotAI* botAI) { return new CastProvokeAction(botAI); }
     static Action* breath_of_fire(PlayerbotAI* botAI) { return new CastBreathOfFireAction(botAI); }
     static Action* soothing_mist_on_party(PlayerbotAI* botAI) { return new CastSoothingMistOnPartyAction(botAI); }

@@ -35,6 +35,25 @@ public:
     SpearHandStrikeTrigger(PlayerbotAI* botAI) : InterruptSpellTrigger(botAI, "spear hand strike") {}
 };
 
+class NoShuffleTrigger : public HasNoAuraTrigger
+{
+public:
+    NoShuffleTrigger(PlayerbotAI* botAI) : HasNoAuraTrigger(botAI, "shuffle") {}
+    std::string const getName() override { return "no shuffle"; }
+};
+
+class ModerateStaggerTrigger : public HasAuraTrigger
+{
+public:
+    ModerateStaggerTrigger(PlayerbotAI* botAI) : HasAuraTrigger(botAI, "moderate stagger") {}
+};
+
+class HeavyStaggerTrigger : public HasAuraTrigger
+{
+public:
+    HeavyStaggerTrigger(PlayerbotAI* botAI) : HasAuraTrigger(botAI, "heavy stagger") {}
+};
+
 class MonkCurePoisonTrigger : public NeedCureTrigger
 {
 public:

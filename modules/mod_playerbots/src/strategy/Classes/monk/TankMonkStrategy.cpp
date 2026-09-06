@@ -15,6 +15,14 @@ NextAction** TankMonkStrategy::getDefaultActions()
 void TankMonkStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericMonkStrategy::InitTriggers(triggers);
+
+    // Target-core spell_monk.cpp confirms Blackout Kick applies/extends Shuffle for Brewmaster.
+    triggers.push_back(new TriggerNode("no shuffle", NextAction::array(0, new NextAction("blackout kick", ACTION_HIGH + 6), nullptr)));
+
+    // Purifying Brew removes the Stagger aura and all severity markers in the target core.
+    triggers.push_back(new TriggerNode("heavy stagger", NextAction::array(0, new NextAction("purifying brew", ACTION_EMERGENCY), nullptr)));
+    triggers.push_back(new TriggerNode("moderate stagger", NextAction::array(0, new NextAction("purifying brew", ACTION_HIGH + 7), nullptr)));
+
     triggers.push_back(new TriggerNode("keg smash", NextAction::array(0, new NextAction("keg smash", ACTION_HIGH + 4), nullptr)));
     triggers.push_back(new TriggerNode("medium health", NextAction::array(0, new NextAction("guard", ACTION_HIGH + 3), nullptr)));
     triggers.push_back(new TriggerNode("low health", NextAction::array(0, new NextAction("elusive brew", ACTION_HIGH + 5), new NextAction("guard", ACTION_HIGH + 4), nullptr)));
