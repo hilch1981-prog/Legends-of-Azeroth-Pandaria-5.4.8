@@ -8,6 +8,8 @@
 namespace
 {
 constexpr uint32 SPELL_MONK_SOOTHING_MIST = 115175;
+constexpr uint32 SPELL_MONK_FORTIFYING_BREW = 115203;
+constexpr uint32 SPELL_MONK_FORTIFYING_BREW_AURA = 120954;
 constexpr uint32 SPELL_MONK_GUARD = 115295;
 constexpr uint32 SPELL_MONK_GUARD_GLYPH_OVERRIDE = 123402;
 constexpr uint32 SPELL_MONK_ELUSIVE_BREW_STACKS = 128939;
@@ -40,6 +42,30 @@ bool HasPowerForSpell(Player* bot, uint32 spellId)
         return false;
 
     return bot->GetPower(powerType) >= powerCost;
+}
+
+uint32 GetFortifyingBrewSpellId(Player* bot, uint32 nameResolvedSpellId)
+{
+    // MoP-era spell data consistently identifies 115203 as the player cast while
+    // the target core registers 120954 as the resulting AuraScript. Prefer the
+    // exact active 115203 spellbook entry when present, but retain a fail-closed
+    // name-resolved fallback for a target DBC that exposes another learned cast.
+    // Never execute the known 120954 aura/script ID as if it were the player cast.
+    if (bot->HasActiveSpell(SPELL_MONK_FORTIFYING_BREW))
+        return SPELL_MONK_FORTIFYING_BREW;
+
+    if (nameResolvedSpellId && nameResolvedSpellId != SPELL_MONK_FORTIFYING_BREW_AURA && bot->HasActiveSpell(nameResolvedSpellId))
+        return nameResolvedSpellId;
+
+    return 0;
+}
+
+bool HasFortifyingBrewAura(Player* bot)
+{
+    // The target core scripts 120954 as Fortifying Brew's defensive aura. Keep
+    // the player-cast ID as a compatibility check until build-18414 runtime data
+    // confirms exactly which aura(s) are visible through Player::HasAura.
+    return bot->HasAura(SPELL_MONK_FORTIFYING_BREW_AURA) || bot->HasAura(SPELL_MONK_FORTIFYING_BREW);
 }
 
 uint32 GetGuardSpellId(Player* bot)
@@ -143,6 +169,26 @@ bool CastSpinningCraneKickAction::isPossible()
 bool CastExpelHarmAction::isPossible()
 {
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastHealingSpellAction::isPossible();
+}
+
+bool CastFortifyingBrewAction::Execute([[maybe_unused]] Event event)
+{
+    uint32 spellId = GetFortifyingBrewSpellId(bot, AI_VALUE2(uint32, "spell id", spell));
+    return spellId && botAI->CastSpell(spellId, bot);
+}
+
+bool CastFortifyingBrewAction::isPossible()
+{
+    if (botAI->IsInVehicle() && !botAI->IsInVehicle(false, false, true))
+        return false;
+
+    uint32 spellId = GetFortifyingBrewSpellId(bot, AI_VALUE2(uint32, "spell id", spell));
+    return HasPowerForSpell(bot, spellId) && botAI->CanCastSpell(spellId, bot);
+}
+
+bool CastFortifyingBrewAction::isUseful()
+{
+    return GetFortifyingBrewSpellId(bot, AI_VALUE2(uint32, "spell id", spell)) && !HasFortifyingBrewAura(bot);
 }
 
 bool CastTouchOfDeathAction::isPossible()
