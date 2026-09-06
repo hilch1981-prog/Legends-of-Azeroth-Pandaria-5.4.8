@@ -8,6 +8,7 @@ namespace
 constexpr uint32 SPELL_MONK_INTERNAL_MEDICINE = 115451;
 constexpr uint32 SPELL_MONK_TIGER_POWER = 125359;
 constexpr uint32 SPELL_MONK_COMBO_BREAKER_TIGER_PALM = 118864;
+constexpr uint32 SPELL_MONK_COMBO_BREAKER_BLACKOUT_KICK = 116768;
 }
 
 bool NoTigerPowerTrigger::IsActive()
@@ -18,6 +19,11 @@ bool NoTigerPowerTrigger::IsActive()
 bool ComboBreakerTigerPalmTrigger::IsActive()
 {
     return bot->HasAura(SPELL_MONK_COMBO_BREAKER_TIGER_PALM);
+}
+
+bool ComboBreakerBlackoutKickTrigger::IsActive()
+{
+    return bot->HasAura(SPELL_MONK_COMBO_BREAKER_BLACKOUT_KICK);
 }
 
 bool TigereyeBrewReadyTrigger::IsActive()
