@@ -13,7 +13,7 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of the current run.
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master` is at the same `06fb98107158ee5a513e673a42674693fb4db7a2` SHA.
-- [ ] Feature rebase onto current `06fb9810...` remains pending. Compare immediately before this progress commit reports **92 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature source/doc HEAD before this progress commit is `467bfbd6092aea89d0b41340005f316019f37d9b`.
+- [ ] Feature rebase onto current `06fb9810...` remains pending. Compare immediately before the first progress update in this run reported **92 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature source/doc HEAD at that point was `467bfbd6092aea89d0b41340005f316019f37d9b`.
 - [x] Upstream #426 was audited for PlayerBot overlap. It updates generic threat APIs (`getThreat` -> `GetThreat`) in `GenericTriggers.cpp`, `TankTargetValue.cpp`, `AttackersValue.cpp`, `DpsTargetValue.cpp`, and `ThreatValues.cpp` plus core combat/threat internals. The Monk feature does not directly call the removed lowercase threat API and continues to consume repository-native `tank target`, so no Monk source rewrite is currently required by #426.
 - [x] No force update or invented rebase resolution was used.
 - [x] Fresh upstream Issue/PR overlap search found no dedicated Monk PlayerBot combat-AI implementation. Historical Monk PRs found previously are unrelated to PlayerBot combat AI: #363 fixes Earth/Wind/Fire crashes, #168 adjusts Monk starting action bars, and #268 adjusts Pandaren action bars/stance behavior. Issue #413 is bot command management; issue #150 is Tushui Monk NPC scripting.
@@ -24,9 +24,11 @@
 - [ ] Real local `PLAYERBOTS=1` compile is therefore still unavailable in this environment.
 - [x] GitHub connector access is healthy and is used for source inspection/writes.
 - [x] Fork-local validation PR #1 (`CI validation: Monk PlayerBot AI workstream`) remains open against fork `master` and is used only for repository-side validation signals. It is **not** the upstream contribution PR and must not be merged as a substitute for the contribution workflow.
-- [ ] The current normalized PR #1 snapshot reports `mergeable: false`, but also still reports stale base SHA `6f264eea...` while fork `master` is actually `06fb9810...`; the direct compare API reports the expected 92-ahead/2-behind divergence. Treat this PR mergeability flag as stale/unresolved rather than proof of a source conflict; do not force-update either branch.
-- [ ] GitHub Actions still has zero workflow runs for the current feature branch. No CI result is being treated as a build substitute.
-- [x] The repository's default GCC workflow is **not** a valid PlayerBot build gate: it configures with `cmake ../ -DTOOLS=1 -DELUNA=0 ...` and omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` whenever `PLAYERBOTS` is false. Even if that workflow starts running, it cannot prove the Monk module compiles unless the build is explicitly configured with `PLAYERBOTS=1`.
+- [ ] The current normalized PR #1 snapshot reports `mergeable: false`, but also still reports stale base SHA `6f264eea...` while fork `master` is actually `06fb9810...`; the direct compare API reports only the expected feature/master divergence. Treat this PR mergeability flag as stale/unresolved rather than proof of a source conflict; do not force-update either branch.
+- [ ] GitHub Actions still has zero workflow runs for the feature branch. No CI result is being treated as a build substitute.
+- [x] The repository's default GCC workflow is **not** a valid PlayerBot build gate: it configures with `cmake ../ -DTOOLS=1 -DELUNA=0 ...` and omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` whenever `PLAYERBOTS` is false. Even a green default workflow cannot prove the Monk module compiles unless PlayerBots are explicitly enabled.
+- [x] A fork-only validation branch `ci/monk-ai-playerbots` was created from feature commit `c07efd3e0347761bb6f0d2c64e115172618664ce`. Only that validation branch changes `.github/workflows/linux_gcc.yml`, adding `-DPLAYERBOTS=1`; validation commit `0c51fa9c3ecb7e3ae97f419296217bd208175096`. The feature branch/upstream contribution diff is not contaminated by this CI-only change.
+- [ ] Immediately after the CI-only push, the branch still has zero workflow runs/status contexts. This is an infrastructure/Actions availability signal, not a compile result; re-check on a later run without treating absence as PASS or FAIL.
 
 ## Repository facts verified
 
@@ -211,7 +213,8 @@
 - Local Git probe still fails with `Could not resolve host: github.com`.
 - This prevents trustworthy local rebase and real local `PLAYERBOTS=1` compile but is not a source build failure.
 - Fork-local validation PR #1 currently has no workflow run, and its normalized mergeability/base metadata is stale relative to current fork `master`.
-- More importantly, the repository's default GCC workflow does not set `PLAYERBOTS=1`; `modules/CMakeLists.txt` therefore excludes `mod_playerbots` in that workflow. A future green default GCC run must **not** be counted as the Monk build gate unless configuration explicitly enables PlayerBots.
+- The repository's default GCC workflow does not set `PLAYERBOTS=1`; `modules/CMakeLists.txt` therefore excludes `mod_playerbots` in that workflow. A future green default GCC run must **not** be counted as the Monk build gate.
+- A separate fork-only `ci/monk-ai-playerbots` branch now supplies the missing `-DPLAYERBOTS=1` flag without altering the feature branch. Its first push currently has no Actions run/status context, so CI availability itself remains the blocker.
 - Do not mark build/runtime boxes complete until actual `PLAYERBOTS=1` compile/runtime evidence exists.
 
 ## External overlap / coordination
@@ -220,7 +223,7 @@
 - Historical Monk PRs #363, #168, and #268 are unrelated to this PlayerBot combat-AI workstream.
 - #413: bot command management only.
 - #150: Tushui Monk NPC behavior only.
-- Fork PR #1 is validation-only and is not an upstream coordination/contribution PR.
+- Fork PR #1 and `ci/monk-ai-playerbots` are validation-only and are not upstream coordination/contribution artifacts.
 
 ## Key references
 
@@ -240,8 +243,8 @@
 ## Next deterministic action
 
 1. Re-check upstream/fork/feature SHAs and Monk AI overlap at the start of the next run.
-2. Retry local Git network access once. If restored, rebase cleanly onto `06fb9810...`; abort and record exact conflict paths if any conflict is ambiguous.
-3. Configure a real build with `-DPLAYERBOTS=1` after rebase/network recovery. Do not rely on the repository's default GCC workflow because it excludes `mod_playerbots` without that flag.
-4. Fix any compile/link failures, then enable `MonkAiObjectContext` construction in `AiFactory.cpp` only after the pre-activation PlayerBot build passes; rebuild again with `PLAYERBOTS=1`.
-5. If local build access remains transiently unavailable, continue only narrow static review of Monk resource/variant/cast behavior and periodically re-check whether fork-side Actions can provide an explicitly `PLAYERBOTS=1` validation path without contaminating the upstream contribution diff.
+2. Re-check `ci/monk-ai-playerbots` commit `0c51fa9c...` for an Actions run/status. If a real `PLAYERBOTS=1` build appears, inspect and fix every Monk compiler/linker failure immediately; if no run exists, do not infer a build result.
+3. Retry local Git network access once. If restored, rebase cleanly onto current upstream/fork `master`; abort and record exact conflict paths if any conflict is ambiguous.
+4. Configure a real build with `-DPLAYERBOTS=1` after rebase/network recovery. Do not rely on the repository's unmodified default GCC workflow because it excludes `mod_playerbots` without that flag.
+5. After a pre-activation PlayerBot build passes, enable `MonkAiObjectContext` construction in `AiFactory.cpp`, rebuild again with `PLAYERBOTS=1`, and fix any activation-only failures.
 6. After both PlayerBot builds pass, perform Brewmaster/Mistweaver/Windwalker runtime validation including Guard and Mana Tea glyph/no-glyph paths, Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm cadence, and Fists of Fury channel behavior before entering the upstream coordination gate.
