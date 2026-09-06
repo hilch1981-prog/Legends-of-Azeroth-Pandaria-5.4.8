@@ -90,6 +90,7 @@ class CastElusiveBrewAction : public CastBuffSpellAction
 {
 public:
     CastElusiveBrewAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "elusive brew") {}
+    bool isUseful() override;
 };
 
 class CastPurifyingBrewAction : public CastSpellAction
@@ -162,6 +163,7 @@ class CastManaTeaAction : public CastBuffSpellAction
 {
 public:
     CastManaTeaAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "mana tea") {}
+    bool isUseful() override;
 };
 
 class CastTigereyeBrewAction : public CastBuffSpellAction
