@@ -7,6 +7,8 @@
 namespace
 {
 constexpr uint32 SPELL_MONK_SOOTHING_MIST = 115175;
+constexpr uint32 SPELL_MONK_GUARD = 115295;
+constexpr uint32 SPELL_MONK_GUARD_GLYPH_OVERRIDE = 123402;
 constexpr uint32 SPELL_MONK_ELUSIVE_BREW_STACKS = 128939;
 constexpr uint32 SPELL_MONK_MANA_TEA_STACKS = 115867;
 constexpr uint32 SPELL_MONK_RENEWING_MIST_HOT = 119611;
@@ -33,6 +35,26 @@ bool HasPowerForSpell(Player* bot, uint32 spellId)
         return false;
 
     return bot->GetPower(powerType) >= powerCost;
+}
+
+uint32 GetGuardSpellId(Player* bot)
+{
+    // MoP exposes 123402 as the Glyph of Guard spellbook override for normal Guard 115295.
+    // Prefer the active override only when the target core actually exposes it in the bot's
+    // spellbook; otherwise fall back to the normal learned Guard. This avoids the generic
+    // name resolver's ambiguous ordering when both same-name, unranked spells are active.
+    if (bot->HasActiveSpell(SPELL_MONK_GUARD_GLYPH_OVERRIDE))
+        return SPELL_MONK_GUARD_GLYPH_OVERRIDE;
+
+    if (bot->HasActiveSpell(SPELL_MONK_GUARD))
+        return SPELL_MONK_GUARD;
+
+    return 0;
+}
+
+bool HasGuardAura(Player* bot)
+{
+    return bot->HasAura(SPELL_MONK_GUARD) || bot->HasAura(SPELL_MONK_GUARD_GLYPH_OVERRIDE);
 }
 
 Unit* GetSoothingMistTarget(Player* bot)
@@ -128,9 +150,24 @@ bool CastKegSmashAction::isPossible()
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
 }
 
+bool CastGuardAction::Execute([[maybe_unused]] Event event)
+{
+    uint32 spellId = GetGuardSpellId(bot);
+    return spellId && botAI->CastSpell(spellId, bot);
+}
+
 bool CastGuardAction::isPossible()
 {
-    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastBuffSpellAction::isPossible();
+    if (botAI->IsInVehicle() && !botAI->IsInVehicle(false, false, true))
+        return false;
+
+    uint32 spellId = GetGuardSpellId(bot);
+    return HasPowerForSpell(bot, spellId) && botAI->CanCastSpell(spellId, bot);
+}
+
+bool CastGuardAction::isUseful()
+{
+    return GetGuardSpellId(bot) && !HasGuardAura(bot);
 }
 
 bool CastElusiveBrewAction::isUseful()
