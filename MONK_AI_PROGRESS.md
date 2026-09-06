@@ -12,20 +12,20 @@
 
 - [x] Upstream, fork `master`, and feature branch checked at the start of the current run.
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
-- [x] Fork `master` was safely fast-forwarded to the same `06fb98107158ee5a513e673a42674693fb4db7a2` SHA with no force update.
-- [ ] Feature rebase onto current `06fb9810...` remains pending. Current compare after this run's code changes reports **83 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature HEAD before this progress commit is `954fd28cc811691fe52cdf536d860b2d09df5de5`.
+- [x] Fork `master` is at the same `06fb98107158ee5a513e673a42674693fb4db7a2` SHA.
+- [ ] Feature rebase onto current `06fb9810...` remains pending. Compare immediately before this progress commit reports **89 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature source/doc HEAD before this progress commit is `6693f5d79d644db72aa06931f3d8db11c2deeacf`.
 - [x] Upstream #426 was audited for PlayerBot overlap. It updates generic threat APIs (`getThreat` -> `GetThreat`) in `GenericTriggers.cpp`, `TankTargetValue.cpp`, `AttackersValue.cpp`, `DpsTargetValue.cpp`, and `ThreatValues.cpp` plus core combat/threat internals. The Monk feature does not directly call the removed lowercase threat API and continues to consume repository-native `tank target`, so no Monk source rewrite is currently required by #426.
 - [x] No force update or invented rebase resolution was used.
-- [x] Fresh upstream Issue/PR overlap search found no dedicated Monk PlayerBot combat-AI implementation. Historical Monk PRs found are unrelated to PlayerBot combat AI: #363 fixes Earth/Wind/Fire crashes, #168 adjusts Monk starting action bars, and #268 adjusts Pandaren action bars/stance behavior. Issue #413 is bot command management; issue #150 is Tushui Monk NPC scripting.
+- [x] Fresh upstream Issue/PR overlap search found no dedicated Monk PlayerBot combat-AI implementation. Historical Monk PRs found previously are unrelated to PlayerBot combat AI: #363 fixes Earth/Wind/Fire crashes, #168 adjusts Monk starting action bars, and #268 adjusts Pandaren action bars/stance behavior. Issue #413 is bot command management; issue #150 is Tushui Monk NPC scripting.
 
 ### Environment / validation state
 
-- [ ] Real local Git/rebase is currently unavailable because the execution environment still cannot resolve `github.com` (`Could not resolve host: github.com`). A fresh `git ls-remote` network probe in this run failed with the same DNS error.
+- [ ] Real local Git/rebase is currently unavailable because the execution environment still cannot resolve `github.com` (`Could not resolve host: github.com`). The local Git network probe in this run failed with the same DNS error.
 - [ ] Real local `PLAYERBOTS=1` compile is therefore still unavailable in this environment.
 - [x] GitHub connector access is healthy and is used for source inspection/writes.
 - [x] Fork-local validation PR #1 (`CI validation: Monk PlayerBot AI workstream`) remains open against fork `master` and is used solely to seek repository-native CI/build evidence. It is **not** the upstream contribution PR and must not be merged as a substitute for the contribution workflow.
-- [ ] GitHub Actions still has no workflow run for the current feature head. No CI result is being treated as a build substitute.
-- [ ] Immediately after the fork `master` fast-forward, the PR snapshot reported `mergeable: false` while the compare API showed only the expected 83-ahead/2-behind divergence and no Monk-path overlap with #426. Treat this as an unresolved/stale mergeability signal until GitHub recomputes it; do not force-update either branch to make the validation PR green.
+- [x] GitHub has recomputed validation PR #1 as `mergeable: true` for current head `6693f5d79d644db72aa06931f3d8db11c2deeacf`; the earlier `mergeable: false` signal was transient/stale rather than proof of a source conflict.
+- [ ] GitHub Actions still has no workflow run for current feature head `6693f5d7...`. No CI result is being treated as a build substitute.
 
 ## Repository facts verified
 
@@ -47,6 +47,7 @@
 - [x] Non-combat `nc` is loaded for Monk through the universal non-combat strategy path. Because there is no separate Monk case in `AddDefaultNonCombatStrategies`, Mistweaver-specific out-of-combat behavior must be specialization-gated inside `GenericMonkNonCombatStrategy`.
 - [x] Target-core `spell_monk.cpp` explicitly identifies Combo Breaker: Tiger Palm as aura `118864` and Combo Breaker: Blackout Kick as aura `116768`; both are emitted by `spell_monk_combo_breaker`. MoP-era spell data corroborates Tiger Power as aura `125359`; live build-18414 runtime verification remains pending.
 - [x] Target-core `spell_monk_fortifying_brew` is an AuraScript on `120954`. This proves `120954` is an aura/effect ID, **not** that it is the learned player cast ID. The PlayerBot action remains spell-name resolved and does not hardcode `120954`; MoP-era data points to player cast `115203`, which remains pending target DBC/runtime proof.
+- [x] Target-core `spell_monk_muscle_memory` is wired to Jab variants and casts exact buff `139597` when the Monk knows passive `139598`; the Spinning Crane Kick damage script can also grant `139597` after three hits with the same passive check.
 
 ## Implementation checklist
 
@@ -88,7 +89,8 @@
 - [x] Heal-target out-of-range movement recovery using the same repository pattern as existing healers.
 - [x] Magic Detox requires Internal Medicine `115451`; poison/disease Detox remains generic Monk utility.
 - [x] Mistweaver non-combat support added in `GenericMonkNonCombatStrategy`: specialization-gated Wise Serpent stance, magic Detox, range recovery, and basic Soothing/Renewing/Surging/Enveloping party healing. Brewmaster/Windwalker do not receive these healer-only non-combat triggers. Commit `766a77e6467e9bead069041bbb045556209c6a83`.
-- [ ] Runtime combat/non-combat channel, healing cadence, Renewing Mist spread, Uplift, Mana Tea, and magic-dispel validation.
+- [x] Remove unconditional Mistweaver Tiger Palm default Chi spending: Jab is now the healthy-party melee fallback, and exact Muscle Memory aura `139597` triggers Tiger Palm at default-level relevance below healing actions. Source commits `85fc716466cf69f62d81349f2a54b2cc123bb58d`, `52f38ba9ac22b94693150ab30fae837619aa1e81`, `5a44a35a7f89daaf45fd3ddbc36efef1379f2d8e`, `40b8530758b097127ccc0f9029aa6ea0477f86f7`.
+- [ ] Runtime combat/non-combat channel, healing cadence, Renewing Mist spread, Uplift, Mana Tea, Muscle Memory/Jab/Tiger Palm cadence, and magic-dispel validation.
 
 ### Windwalker
 
@@ -119,7 +121,15 @@
 
 ## Bugs / issues discovered
 
-### Fixed this run — Combo Breaker free procs could be rejected by conservative Monk power preflight
+### Fixed this run — Mistweaver default Tiger Palm could starve healing Chi
+
+- **Symptom:** `HealMonkStrategy::getDefaultActions()` kept `tiger palm` as an unconditional melee fallback after Soothing/Renewing Mist. When a Mistweaver entered melee with Chi available, that default action could spend Chi without a Muscle Memory proc and compete with Enveloping Mist/Uplift resource needs.
+- **Target-core evidence:** `spell_monk_muscle_memory` is attached to Jab variants and casts exact proc aura `139597` when the Monk knows passive `139598`. The Spinning Crane Kick damage script can also grant `139597` after three hits under the same passive check.
+- **Fix:** replace unconditional Mistweaver Tiger Palm with Jab as the default melee fallback; add exact `139597` `MuscleMemoryTrigger`, register it in `MonkAiObjectContext`, and request Tiger Palm only from that proc at `ACTION_DEFAULT + 0.25f`, below actual healing trigger relevance.
+- **Commits:** `85fc716466cf69f62d81349f2a54b2cc123bb58d`, `52f38ba9ac22b94693150ab30fae837619aa1e81`, `5a44a35a7f89daaf45fd3ddbc36efef1379f2d8e`, `40b8530758b097127ccc0f9029aa6ea0477f86f7`; spell ledger updated by `6693f5d79d644db72aa06931f3d8db11c2deeacf`.
+- **Verification:** target-core proc generation and factory/action key wiring verified statically. Real compile and live Jab -> Muscle Memory -> Tiger Palm cadence/mana interaction remain pending.
+
+### Fixed previously — Combo Breaker free procs could be rejected by conservative Monk power preflight
 
 - **Symptom:** the Windwalker strategy already reacted to Combo Breaker: Tiger Palm, but `CastTigerPalmAction::isPossible()` still required the normal DBC Chi cost to be available before the cast. Blackout Kick had the same preflight behavior and no explicit Combo Breaker trigger. If `CalcPowerCost` does not fold the proc aura into the preflight result, a valid free proc could be skipped at zero Chi.
 - **Target-core evidence:** `spell_monk_combo_breaker` explicitly emits `118864` for Tiger Palm and `116768` for Blackout Kick. These are exact target-core proc auras, not donor-only IDs.
@@ -185,14 +195,14 @@
 
 ### Environment blocker — transient DNS / CI unavailable
 
-- Fresh local Git probe still fails with `Could not resolve host: github.com`.
+- Local Git probe still fails with `Could not resolve host: github.com`.
 - This prevents trustworthy local rebase and real local `PLAYERBOTS=1` compile but is not a source build failure.
-- Fork-local validation PR #1 exists to request repository-native CI evidence, but the current feature head still has no workflow run.
-- Do not mark build/runtime boxes complete until actual evidence exists.
+- Fork-local validation PR #1 is currently mergeable, so there is no GitHub-computed merge conflict on the present branch; however current feature head still has no workflow run.
+- Do not mark build/runtime boxes complete until actual compile/runtime evidence exists.
 
 ## External overlap / coordination
 
-- No dedicated overlapping Monk PlayerBot combat-AI implementation issue/PR found in the current run.
+- Fresh searches found no dedicated overlapping Monk PlayerBot combat-AI implementation issue/PR in the current run.
 - Historical Monk PRs #363, #168, and #268 are unrelated to this PlayerBot combat-AI workstream.
 - #413: bot command management only.
 - #150: Tushui Monk NPC behavior only.
@@ -216,8 +226,8 @@
 ## Next deterministic action
 
 1. Re-check upstream/fork/feature SHAs and Monk AI overlap at the start of the next run.
-2. Check fork validation PR #1/current feature head for a GCC workflow run/status and re-check its mergeability after GitHub has had time to recompute against the new fork `master`. If a run appears, inspect build jobs/logs and fix any Monk compiler/linker failures immediately.
+2. Check fork validation PR #1/current feature head for a GCC workflow run/status. If a run appears, inspect build jobs/logs and fix any Monk compiler/linker failures immediately.
 3. Retry local Git network access once. If restored, rebase cleanly onto `06fb9810...`; abort and record exact conflict paths if any conflict is ambiguous.
 4. Run a real `PLAYERBOTS=1` build after rebase/network recovery. Do not enable the `AiFactory::createAiObjectContext` Monk case before a real build gate passes.
 5. If build access remains transiently unavailable, continue narrow static review of rotation/resource correctness and target-core API usage only; do not broaden feature scope or open the upstream contribution issue/PR.
-6. After a successful build, fix compile/link issues, enable `MonkAiObjectContext` construction, rebuild, then proceed to runtime validation and the upstream coordination gate.
+6. After a successful build, fix compile/link issues, enable `MonkAiObjectContext` construction, rebuild, then perform Brewmaster/Mistweaver/Windwalker runtime validation including Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm cadence before entering the upstream coordination gate.
