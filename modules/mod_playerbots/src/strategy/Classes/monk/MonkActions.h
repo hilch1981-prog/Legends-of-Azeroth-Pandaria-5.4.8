@@ -8,24 +8,28 @@ class CastJabAction : public CastMeleeSpellAction
 {
 public:
     CastJabAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "jab") {}
+    bool isPossible() override;
 };
 
 class CastTigerPalmAction : public CastMeleeSpellAction
 {
 public:
     CastTigerPalmAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "tiger palm") {}
+    bool isPossible() override;
 };
 
 class CastBlackoutKickAction : public CastMeleeSpellAction
 {
 public:
     CastBlackoutKickAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "blackout kick") {}
+    bool isPossible() override;
 };
 
 class CastSpinningCraneKickAction : public CastMeleeSpellAction
 {
 public:
     CastSpinningCraneKickAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "spinning crane kick") {}
+    bool isPossible() override;
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
 
@@ -33,6 +37,7 @@ class CastExpelHarmAction : public CastHealingSpellAction
 {
 public:
     CastExpelHarmAction(PlayerbotAI* botAI) : CastHealingSpellAction(botAI, "expel harm") {}
+    bool isPossible() override;
 };
 
 class CastFortifyingBrewAction : public CastBuffSpellAction
@@ -77,6 +82,7 @@ class CastKegSmashAction : public CastMeleeSpellAction
 {
 public:
     CastKegSmashAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "keg smash") {}
+    bool isPossible() override;
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
 
@@ -98,6 +104,7 @@ class CastPurifyingBrewAction : public CastSpellAction
 public:
     CastPurifyingBrewAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "purifying brew") {}
     std::string const GetTargetName() override { return "self target"; }
+    bool isPossible() override;
 };
 
 class CastProvokeAction : public CastSpellAction
@@ -112,6 +119,7 @@ class CastBreathOfFireAction : public CastMeleeSpellAction
 {
 public:
     CastBreathOfFireAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "breath of fire") {}
+    bool isPossible() override;
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
 
@@ -187,12 +195,14 @@ class CastRisingSunKickAction : public CastMeleeSpellAction
 {
 public:
     CastRisingSunKickAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "rising sun kick") {}
+    bool isPossible() override;
 };
 
 class CastFistsOfFuryAction : public CastMeleeSpellAction
 {
 public:
     CastFistsOfFuryAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "fists of fury") {}
+    bool isPossible() override;
 };
 
 class CastTouchOfKarmaAction : public CastSpellAction
