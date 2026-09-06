@@ -1,6 +1,7 @@
 #include "MonkActions.h"
 
 #include "Playerbots.h"
+#include "SpellAuras.h"
 
 namespace
 {
