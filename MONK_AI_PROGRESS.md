@@ -14,7 +14,7 @@
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master`: same `06fb98107158ee5a513e673a42674693fb4db7a2`.
 - [x] Feature branch was safely synchronized with current fork/upstream `master` through fork-local sync PR #3 (`master` -> `feature/monk-ai-object-context`) after GitHub reported the merge as clean. The merge commit is `5041141c2846d2da9d16e69aaf57e4cdb312f8c3`; no force-push or history rewrite was used.
-- [x] Post-sync compare: feature **101 ahead / 0 behind**, with merge base equal to current `master` `06fb98107158ee5a513e673a42674693fb4db7a2` before this documentation commit.
+- [x] Source synchronization compare immediately after PR #3: feature **101 ahead / 0 behind**, with merge base equal to current `master` `06fb98107158ee5a513e673a42674693fb4db7a2`. Subsequent progress-only documentation commits add only to the ahead count; the branch remains 0 behind.
 - [x] Upstream #426 audited: it changes generic combat/threat APIs, but Monk Provoke uses repository-native `tank target` and does not directly call the renamed ThreatManager getter.
 - [x] Fresh upstream Issue/PR searches found no materially overlapping Monk PlayerBot combat-AI implementation. Historical Monk PRs #363/#168/#268 and issues #413/#150 remain unrelated to this workstream.
 
@@ -25,9 +25,10 @@
 - [x] Fork PR #1 remains validation-only and is **not** the upstream contribution PR. GitHub mergeability has fluctuated while head/base moved, so it is not treated as a compile or conflict gate.
 - [ ] Feature branch still has zero GitHub Actions runs after synchronization.
 - [x] Repository default GCC workflow is **not** a valid PlayerBot build gate: it omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` when `PLAYERBOTS` is false.
-- [x] Fork-only branch `ci/monk-ai-playerbots` was created from feature source. Validation commit `0c51fa9c3ecb7e3ae97f419296217bd208175096` changes only `.github/workflows/linux_gcc.yml` to add `-DPLAYERBOTS=1`; this change is intentionally absent from the feature branch/upstream contribution diff.
-- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) remains open specifically as build validation. It is mergeable, but it is build-validation-only, is **not** the upstream implementation PR, and must not be merged.
-- [ ] PR #2 / `ci/monk-ai-playerbots` still has zero workflow runs/status contexts after the PR-open event. The fork reports no Actions run for that branch, so no CI PASS/FAIL is inferred.
+- [x] Fork-only branch `ci/monk-ai-playerbots` carries one intentional validation-only workflow difference: `.github/workflows/linux_gcc.yml` adds `-DPLAYERBOTS=1`. That workflow change remains absent from the feature branch/upstream contribution diff.
+- [x] The CI branch had drifted 11 commits behind the feature after master synchronization. Fork-local PR #4 (`feature/monk-ai-object-context` -> `ci/monk-ai-playerbots`) was cleanly merged to refresh the CI branch while preserving the isolated workflow change. CI head after that refresh: `0fd1d1f5adea3e6de28a47859fa31c5f6191792b`.
+- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) now points at refreshed CI head `0fd1d1f5adea3e6de28a47859fa31c5f6191792b` and GitHub reports it mergeable. It remains build-validation-only, is **not** the upstream implementation PR, and must not be merged.
+- [ ] PR #2 / refreshed `ci/monk-ai-playerbots` still has zero workflow runs/status contexts after the branch synchronization. No CI PASS/FAIL is inferred.
 
 ## Architecture / implementation state
 
@@ -88,6 +89,7 @@
 ## Key fixes in the current implementation
 
 - Safe master synchronization without rewriting feature history: fork-local PR #3, merge commit `5041141c2846d2da9d16e69aaf57e4cdb312f8c3`.
+- Refreshed fork-only `PLAYERBOTS=1` validation source without polluting feature diff: fork-local PR #4, CI merge commit `0fd1d1f5adea3e6de28a47859fa31c5f6191792b`.
 - Mana Tea explicit variant resolution and 1-stack normal / 2-stack glyph thresholds: `15fa4919b7a995d0e164fb89841a8dbcabe7ff9c`.
 - Mana Tea spell evidence correction: `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`; source-comment/direct-include hardening: `c9346401e269971ed8d1434be1873116f0182e38`.
 - Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm flow: `85fc7164`, `52f38ba9`, `5a44a35a`, `40b85307`.
@@ -102,6 +104,7 @@
 ## Build / runtime / upstream gate
 
 - [x] Feature branch contains current upstream/fork `master` without force-push/history rewrite.
+- [x] Fork-only `PLAYERBOTS=1` validation branch refreshed to current feature source while keeping its workflow change isolated.
 - [ ] Pre-activation build with `-DPLAYERBOTS=1` passes.
 - [ ] Enable Monk `AiObjectContext` construction in `AiFactory.cpp`.
 - [ ] Post-activation build with `-DPLAYERBOTS=1` passes.
@@ -116,14 +119,15 @@
 
 ## Exact blocker
 
-The current blocker is **build/runtime execution availability**, not synchronization and not a known source compiler error. The feature branch now contains current `master` and is 0 commits behind, but the local runtime still cannot resolve/reach `github.com`, so the full checkout/build environment cannot be refreshed or compiled here. The fork build-validation PR #2 still has no Actions run/status even though its isolated workflow change enables `-DPLAYERBOTS=1`. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL.
+The current blocker is **build/runtime execution availability**, not synchronization and not a known source compiler error. The feature branch contains current `master` and remains 0 commits behind. The dedicated fork validation branch has also been refreshed to the current feature source and still carries the isolated `-DPLAYERBOTS=1` workflow change, but GitHub reports zero Actions runs for that branch even after the synchronization push/PR event. The local runtime still cannot resolve/reach `github.com`, so the full checkout/build environment cannot be refreshed or compiled here. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL.
 
 ## External coordination
 
 - No dedicated overlapping upstream Monk PlayerBot combat-AI issue/PR found this run.
 - Fork PR #1 is mergeability/diff validation only.
 - Fork PR #2 and branch `ci/monk-ai-playerbots` are PlayerBot-build validation artifacts only; they are not upstream contribution artifacts and must not be merged.
-- Fork PR #3 was synchronization-only and is merged; it is not an upstream contribution artifact.
+- Fork PR #3 was feature/master synchronization-only and is merged; it is not an upstream contribution artifact.
+- Fork PR #4 was validation-branch synchronization-only and is merged; it is not an upstream contribution artifact.
 - No upstream implementation issue/PR will be opened before the build gate.
 
 ## Next deterministic action
