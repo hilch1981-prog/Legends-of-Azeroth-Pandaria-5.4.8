@@ -90,6 +90,13 @@ public:
     bool IsActive() override;
 };
 
+class ComboBreakerBlackoutKickTrigger : public Trigger
+{
+public:
+    ComboBreakerBlackoutKickTrigger(PlayerbotAI* botAI) : Trigger(botAI, "combo breaker blackout kick") {}
+    bool IsActive() override;
+};
+
 // Target-core spell_monk.cpp confirms 125195 as the accumulated Tigereye Brew
 // stack aura and 116740 as the active cast that consumes up to 10 stacks.
 // Use the exact stack aura ID here instead of HasAuraStackTrigger: the generic
