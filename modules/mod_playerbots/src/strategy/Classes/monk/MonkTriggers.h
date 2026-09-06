@@ -35,11 +35,12 @@ public:
     SpearHandStrikeTrigger(PlayerbotAI* botAI) : InterruptSpellTrigger(botAI, "spear hand strike") {}
 };
 
+// Factory key is "no shuffle", but HasNoAuraTrigger must keep its internal name as
+// "shuffle" because its IsActive() uses getName() as the aura lookup key.
 class NoShuffleTrigger : public HasNoAuraTrigger
 {
 public:
     NoShuffleTrigger(PlayerbotAI* botAI) : HasNoAuraTrigger(botAI, "shuffle") {}
-    std::string const getName() override { return "no shuffle"; }
 };
 
 class ModerateStaggerTrigger : public HasAuraTrigger
