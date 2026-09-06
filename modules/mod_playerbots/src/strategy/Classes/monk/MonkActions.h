@@ -62,6 +62,9 @@ class CastFortifyingBrewAction : public CastBuffSpellAction
 {
 public:
     CastFortifyingBrewAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "fortifying brew") {}
+    bool Execute(Event event) override;
+    bool isPossible() override;
+    bool isUseful() override;
 };
 
 class CastSpearHandStrikeAction : public CastMeleeSpellAction
