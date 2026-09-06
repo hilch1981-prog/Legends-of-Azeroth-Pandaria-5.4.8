@@ -5,6 +5,24 @@
 #include "GenericTriggers.h"
 #include "SharedDefines.h"
 
+class NoStanceOfTheSturdyOxTrigger : public HasNoAuraTrigger
+{
+public:
+    NoStanceOfTheSturdyOxTrigger(PlayerbotAI* botAI) : HasNoAuraTrigger(botAI, "stance of the sturdy ox") {}
+};
+
+class NoStanceOfTheWiseSerpentTrigger : public HasNoAuraTrigger
+{
+public:
+    NoStanceOfTheWiseSerpentTrigger(PlayerbotAI* botAI) : HasNoAuraTrigger(botAI, "stance of the wise serpent") {}
+};
+
+class NoStanceOfTheFierceTigerTrigger : public HasNoAuraTrigger
+{
+public:
+    NoStanceOfTheFierceTigerTrigger(PlayerbotAI* botAI) : HasNoAuraTrigger(botAI, "stance of the fierce tiger") {}
+};
+
 class KegSmashTrigger : public SpellCanBeCastTrigger
 {
 public:
