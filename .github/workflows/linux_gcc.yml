@@ -26,7 +26,7 @@ jobs:
       run: |
         mkdir bin
         cd bin
-        cmake ../ -DTOOLS=1 -DELUNA=0 -DCMAKE_INSTALL_PREFIX=check_install
+        cmake ../ -DTOOLS=1 -DELUNA=0 -DPLAYERBOTS=1 -DCMAKE_INSTALL_PREFIX=check_install
         cd ..
     - name: Build
       run: |
