@@ -58,6 +58,7 @@ public:
         creators["no shuffle"] = &MonkTriggerFactoryInternal::no_shuffle;
         creators["moderate stagger"] = &MonkTriggerFactoryInternal::moderate_stagger;
         creators["heavy stagger"] = &MonkTriggerFactoryInternal::heavy_stagger;
+        creators["tigereye brew ready"] = &MonkTriggerFactoryInternal::tigereye_brew_ready;
         creators["cure poison"] = &MonkTriggerFactoryInternal::cure_poison;
         creators["cure disease"] = &MonkTriggerFactoryInternal::cure_disease;
         creators["cure poison on party"] = &MonkTriggerFactoryInternal::cure_poison_on_party;
@@ -73,6 +74,7 @@ private:
     static Trigger* no_shuffle(PlayerbotAI* botAI) { return new NoShuffleTrigger(botAI); }
     static Trigger* moderate_stagger(PlayerbotAI* botAI) { return new ModerateStaggerTrigger(botAI); }
     static Trigger* heavy_stagger(PlayerbotAI* botAI) { return new HeavyStaggerTrigger(botAI); }
+    static Trigger* tigereye_brew_ready(PlayerbotAI* botAI) { return new TigereyeBrewReadyTrigger(botAI); }
     static Trigger* cure_poison(PlayerbotAI* botAI) { return new MonkCurePoisonTrigger(botAI); }
     static Trigger* cure_disease(PlayerbotAI* botAI) { return new MonkCureDiseaseTrigger(botAI); }
     static Trigger* cure_poison_on_party(PlayerbotAI* botAI) { return new MonkCurePoisonOnPartyTrigger(botAI); }
