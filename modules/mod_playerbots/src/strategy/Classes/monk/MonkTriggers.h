@@ -99,6 +99,14 @@ public:
     std::string const getName() override { return "cure disease"; }
 };
 
+class MonkCureMagicTrigger : public NeedCureTrigger
+{
+public:
+    MonkCureMagicTrigger(PlayerbotAI* botAI) : NeedCureTrigger(botAI, "detox", DISPEL_MAGIC) {}
+    std::string const getName() override { return "cure magic"; }
+    bool IsActive() override;
+};
+
 class MonkCurePoisonOnPartyTrigger : public PartyMemberNeedCureTrigger
 {
 public:
@@ -111,6 +119,14 @@ class MonkCureDiseaseOnPartyTrigger : public PartyMemberNeedCureTrigger
 public:
     MonkCureDiseaseOnPartyTrigger(PlayerbotAI* botAI) : PartyMemberNeedCureTrigger(botAI, "detox", DISPEL_DISEASE) {}
     std::string const getName() override { return "cure disease on party"; }
+};
+
+class MonkCureMagicOnPartyTrigger : public PartyMemberNeedCureTrigger
+{
+public:
+    MonkCureMagicOnPartyTrigger(PlayerbotAI* botAI) : PartyMemberNeedCureTrigger(botAI, "detox", DISPEL_MAGIC) {}
+    std::string const getName() override { return "cure magic on party"; }
+    bool IsActive() override;
 };
 
 #endif
