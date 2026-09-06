@@ -13,7 +13,7 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of this run and upstream re-checked before handoff.
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master`: same `06fb98107158ee5a513e673a42674693fb4db7a2`.
-- [ ] Direct compare during this run: feature **97 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; this documentation update may add one further ahead-only commit.
+- [ ] Direct compare immediately before this progress-only commit: feature **99 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; this documentation commit itself adds one further ahead-only commit.
 - [ ] Rebase remains pending because the local execution environment cannot resolve/reach `github.com`; no force update or invented rebase was attempted.
 - [x] Upstream #426 audited: it changes generic combat/threat APIs, but Monk Provoke uses repository-native `tank target` and does not directly call the renamed ThreatManager getter.
 - [x] Fresh upstream Issue/PR searches found no materially overlapping Monk PlayerBot combat-AI implementation. Historical Monk PRs #363/#168/#268 and issues #413/#150 remain unrelated to this workstream.
@@ -26,7 +26,7 @@
 - [ ] Feature branch has zero GitHub Actions runs.
 - [x] Repository default GCC workflow is **not** a valid PlayerBot build gate: it omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` when `PLAYERBOTS` is false.
 - [x] Fork-only branch `ci/monk-ai-playerbots` was created from feature source. Validation commit `0c51fa9c3ecb7e3ae97f419296217bd208175096` changes only `.github/workflows/linux_gcc.yml` to add `-DPLAYERBOTS=1`; this change is intentionally absent from the feature branch/upstream contribution diff.
-- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) was opened this run specifically to exercise the workflow's `pull_request: opened` trigger. It is build-validation-only, is **not** the upstream implementation PR, and must not be merged.
+- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) was opened specifically to exercise the workflow's `pull_request: opened` trigger. It is build-validation-only, is **not** the upstream implementation PR, and must not be merged.
 - [ ] PR #2 / `ci/monk-ai-playerbots` still has zero workflow runs/status contexts after the PR-open event. The fork also reports zero Actions runs repository-wide, so no CI PASS/FAIL is inferred.
 
 ## Architecture / implementation state
@@ -40,6 +40,7 @@
 - [x] Current upstream `SpellInfo.h` revalidates the exact APIs used by that preflight: `GetPowerType(Unit const*, int32*)` and `CalcPowerCost(Unit const*, SpellSchoolMask, int32)`.
 - [x] Current generic action code revalidates target semantics: `CastHealingSpellAction` targets self (appropriate for Revival/Uplift), while party heals use `HealPartyMemberAction`/explicit target overrides.
 - [x] Current generic `CastSpellAction::Execute` calls `PlayerbotAI::CastSpell` directly, so the narrow Surging/Enveloping-during-Soothing `isPossible()` exception is not immediately re-run through the generic channel rejection before execution; final legality still remains in the core cast path.
+- [x] `MonkActions.cpp` directly includes `ObjectAccessor.h` for its `ObjectAccessor::FindPlayer` group lookups instead of relying on transitive includes. Source hardening commit: `c9346401e269971ed8d1434be1873116f0182e38`.
 - [x] `RandomPlayerbotFactory.cpp` remains untouched because no concrete defect requires modification.
 - [x] Module source discovery is recursive; no per-file CMake registration is required for the new Monk files.
 - [ ] `MonkAiObjectContext` construction in `Factory/AiFactory.cpp` remains intentionally disabled until a real pre-activation `PLAYERBOTS=1` build passes.
@@ -68,7 +69,7 @@
 - [x] Magic Detox requires Internal Medicine `115451`; poison/disease Detox remains generic Monk utility.
 - [x] Healthy-party melee fallback is Jab; Tiger Palm is requested from exact Muscle Memory proc `139597`, avoiding unconditional healing-Chi spending.
 - [x] Mana Tea same-name variants are explicit: active glyphed `123761` is preferred, otherwise normal `115294`; normal is useful from one stack while glyphed requires two.
-- [x] **Mana Tea evidence corrected this run:** target-core normal `115294` `HandleApply` does **not** consume a stack immediately. It sizes channel duration from the current `115867` stack count; each periodic tick consumes one stack. Glyphed `123761` has an explicit two-stack `CheckCast` and consumes two in its cast handler. The one-stack normal threshold remains correct; only the previous documentation/comment rationale was inaccurate. `MONK_SPELL_AUDIT.md` corrected in `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`.
+- [x] **Mana Tea evidence corrected this run:** target-core normal `115294` `HandleApply` does **not** consume a stack immediately. It sizes channel duration from the current `115867` stack count; each periodic tick consumes one stack. Glyphed `123761` has an explicit two-stack `CheckCast` and consumes two in its cast handler. The one-stack normal threshold remains correct. `MONK_SPELL_AUDIT.md` corrected in `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`; the matching source comment was corrected in `c9346401e269971ed8d1434be1873116f0182e38`.
 - [ ] Runtime normal/glyphed Mana Tea, healing cadence, Renewing Mist/Uplift, Muscle Memory cadence, and magic-dispel validation.
 
 ### Windwalker
@@ -87,7 +88,7 @@
 ## Key fixes in the current implementation
 
 - Mana Tea explicit variant resolution and 1-stack normal / 2-stack glyph thresholds: `15fa4919b7a995d0e164fb89841a8dbcabe7ff9c`.
-- Mana Tea spell audit correction: `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`.
+- Mana Tea spell evidence correction: `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`; source-comment/direct-include hardening: `c9346401e269971ed8d1434be1873116f0182e38`.
 - Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm flow: `85fc7164`, `52f38ba9`, `5a44a35a`, `40b85307`.
 - Combo Breaker free-spender handling: `606bf515`, `ea0c88d2`, `a7e93cd4`, `082910bb`, `954fd28c`.
 - Windwalker Tiger Palm maintenance/proc gating: `a830ff93`, `9d7c39f7`, `c2413821`, `e2490be8`.
