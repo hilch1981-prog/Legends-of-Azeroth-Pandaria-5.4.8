@@ -14,9 +14,9 @@
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master`: same `06fb98107158ee5a513e673a42674693fb4db7a2`.
 - [x] Feature branch was safely synchronized with current fork/upstream `master` through fork-local sync PR #3 (`master` -> `feature/monk-ai-object-context`) after GitHub reported the merge as clean. The merge commit is `5041141c2846d2da9d16e69aaf57e4cdb312f8c3`; no force-push or history rewrite was used.
-- [x] Current GitHub compare before this handoff update: feature **105 ahead / 0 behind** with merge base equal to current `master` `06fb98107158ee5a513e673a42674693fb4db7a2`. This progress-file commit increases only the ahead count; the branch remains 0 behind.
+- [x] Current GitHub compare before this handoff update: feature **106 ahead / 0 behind** with merge base equal to current `master` `06fb98107158ee5a513e673a42674693fb4db7a2`. This progress-file commit increases only the ahead count; the branch remains 0 behind.
 - [x] Upstream #426 audited: it changes generic combat/threat APIs, but Monk Provoke uses repository-native `tank target` and does not directly call the renamed ThreatManager getter.
-- [x] Fresh upstream Issue/PR searches found no materially overlapping Monk PlayerBot combat-AI implementation. Historical Monk PRs #363/#168/#268 and issues #413/#150 remain unrelated to this workstream.
+- [x] Fresh upstream Issue/PR searches again found no materially overlapping Monk PlayerBot combat-AI implementation. The only `monk` PR search hits remain historical #363/#168/#268, while issues #413/#150 remain unrelated to this workstream.
 
 ### Validation environment
 
@@ -26,9 +26,10 @@
 - [ ] Feature branch still has zero GitHub Actions runs after synchronization.
 - [x] Repository default GCC workflow is **not** a valid PlayerBot build gate: it omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` when `PLAYERBOTS` is false.
 - [x] Fork-only branch `ci/monk-ai-playerbots` carries one intentional validation-only workflow difference: `.github/workflows/linux_gcc.yml` adds `-DPLAYERBOTS=1`. That workflow change remains absent from the feature branch/upstream contribution diff.
+- [x] The fork-only validation workflow was re-inspected this run: it is eligible on both non-SQL `push` and `pull_request` (`opened`, `reopened`, `synchronize`, `ready_for_review`) events and configures CMake with `-DPLAYERBOTS=1`. Therefore the continuing absence of a run on PR #2 is an execution/Actions-availability blocker, not a YAML path filter silently excluding the Monk source.
 - [x] Fork-local PR #5 (`feature/monk-ai-object-context` -> `ci/monk-ai-playerbots`) was created and cleanly merged after the Fortifying Brew source/audit changes. CI head is now `8420b66f6fb468332e9d555185f9400178c453b1`; this keeps the validation branch on the current implementation while preserving its isolated workflow change.
-- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) now points at CI head `8420b66f6fb468332e9d555185f9400178c453b1`. It remains build-validation-only, is **not** the upstream implementation PR, and must not be merged.
-- [ ] PR #2 / CI head `8420b66f...` still has zero workflow runs/status contexts after the PR #5 merge/push event. No CI PASS/FAIL is inferred.
+- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) still points at CI head `8420b66f6fb468332e9d555185f9400178c453b1`. It remains build-validation-only, is **not** the upstream implementation PR, and must not be merged.
+- [ ] PR #2 / CI head `8420b66f...` still has zero workflow runs/status contexts this run. No CI PASS/FAIL is inferred.
 
 ## Architecture / implementation state
 
@@ -41,6 +42,7 @@
 - [x] Current upstream `SpellInfo.h` revalidates the exact APIs used by that preflight: `GetPowerType(Unit const*, int32*)` and `CalcPowerCost(Unit const*, SpellSchoolMask, int32)`.
 - [x] Current generic action code revalidates target semantics: `CastHealingSpellAction` targets self (appropriate for Revival/Uplift), while party heals use `HealPartyMemberAction`/explicit target overrides.
 - [x] Current generic `CastSpellAction::Execute` calls `PlayerbotAI::CastSpell` directly, so the narrow Surging/Enveloping-during-Soothing `isPossible()` exception is not immediately re-run through the generic channel rejection before execution; final legality still remains in the core cast path.
+- [x] Static API audit this run closed two compile-risk questions: repository `AiFactory.cpp` itself uses `Player::GetSpecialization()`, matching the Mistweaver non-combat specialization gate, and target `Unit.h` exposes `IsImmunedToSpell(SpellInfo const*, uint32)`, matching the Soothing-Mist exception helper.
 - [x] `MonkActions.cpp` directly includes `ObjectAccessor.h` for its `ObjectAccessor::FindPlayer` group lookups instead of relying on transitive includes. Source hardening commit: `c9346401e269971ed8d1434be1873116f0182e38`.
 - [x] `RandomPlayerbotFactory.cpp` remains untouched because no concrete defect requires modification.
 - [x] Module source discovery is recursive; no per-file CMake registration is required for the new Monk files.
@@ -55,7 +57,9 @@
 - [x] Elusive Brew stack gate.
 - [x] Provoke uses repository-native `tank target` and avoids redundant taunt.
 - [x] Guard resolves active glyph override `123402` before normal `115295`, then uses the exact ID for legality/execution and recognizes either Guard aura as active.
-- [x] Fortifying Brew is now fail-closed instead of blindly name-cast: target-core `120954` is treated only as the proven aura/script ID; active spellbook `115203` is preferred because independent MoP-era evidence consistently identifies it as the player cast; an alternate name-resolved ID is accepted only when it is itself active and is not `120954`.
+- [x] Fortifying Brew is fail-closed instead of blindly name-cast: target-core `120954` is treated only as the proven aura/script ID; active spellbook `115203` is preferred because independent MoP-era evidence consistently identifies it as the player cast; an alternate name-resolved ID is accepted only when it is itself active and is not `120954`.
+- [x] Target-core aura-role evidence was strengthened this run: the Stance of the Sturdy Ox stagger calculation explicitly checks `HasAura(120954)` to add Fortifying Brew's extra stagger percentage. This supports keeping `120954` out of the PlayerBot executable-spell path, but does **not** replace the pending build-18414 spellbook proof for player cast `115203`.
+- [x] Target-core Blackout Kick logic was rechecked this run and still explicitly applies/extends Shuffle for `SPEC_MONK_BREWMASTER`, matching the `no shuffle` -> Blackout Kick strategy.
 - [ ] Runtime/DBC Fortifying Brew proof: verify `HasActiveSpell(115203)`, actual cast/cooldown, and the visible resulting aura on build 18414.
 - [ ] Runtime Guard glyph/no-glyph and tanking validation.
 
@@ -68,6 +72,7 @@
 - [x] Uplift requires useful caster-owned Renewing Mist coverage before spending Chi.
 - [x] Life Cocoon / Revival baseline and heal-target range recovery.
 - [x] Magic Detox requires Internal Medicine `115451`; poison/disease Detox remains generic Monk utility.
+- [x] Target-core Detox script was rechecked this run: spell `115450` suppresses its magic-dispel effect unless the caster has Internal Medicine `115451`, matching the specialization-gated magic Detox triggers.
 - [x] Healthy-party melee fallback is Jab; Tiger Palm is requested from exact Muscle Memory proc `139597`, avoiding unconditional healing-Chi spending.
 - [x] Mana Tea same-name variants are explicit: active glyphed `123761` is preferred, otherwise normal `115294`; normal is useful from one stack while glyphed requires two.
 - [x] Target-core normal `115294` Mana Tea sizes channel duration from current `115867` stacks and consumes one stack per periodic tick; glyphed `123761` requires/consumes two stacks. The one-stack normal threshold remains correct.
@@ -121,7 +126,7 @@
 
 ## Exact blocker
 
-The current blocker is **build/runtime execution availability**, not synchronization and not a known source compiler error. The feature branch contains current `master` and remains 0 commits behind. The dedicated fork validation branch has been refreshed again through PR #5 to CI head `8420b66f6fb468332e9d555185f9400178c453b1` and still carries the isolated `-DPLAYERBOTS=1` workflow change, but GitHub reports zero Actions runs for that head even after the merge/push event. The local runtime still cannot resolve/reach `github.com`, so the full checkout/build environment cannot be refreshed or compiled here. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL.
+The current blocker is **build/runtime execution availability**, not synchronization and not a known source compiler error. The feature branch contains current `master` and remains 0 commits behind. The dedicated fork validation branch is still at CI head `8420b66f6fb468332e9d555185f9400178c453b1` and carries the isolated `-DPLAYERBOTS=1` workflow change. This run revalidated that the workflow YAML should trigger for the PR/source events in use, but GitHub still reports zero Actions runs for that head. The local runtime again cannot resolve/reach `github.com`, so the full checkout/build environment cannot be refreshed or compiled here. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL. Static API and target-core spell audits this run found no new concrete source defect that can safely justify changing Monk behavior without the pending build/runtime evidence.
 
 ## External coordination
 
