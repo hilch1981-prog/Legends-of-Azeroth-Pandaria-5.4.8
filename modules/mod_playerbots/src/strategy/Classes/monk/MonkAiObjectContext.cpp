@@ -17,13 +17,14 @@ public:
     {
         creators["nc"] = &MonkStrategyFactoryInternal::nc;
         creators["aoe"] = &MonkStrategyFactoryInternal::aoe;
-        creators["melee aoe"] = &MonkStrategyFactoryInternal::aoe;
+        creators["melee aoe"] = &MonkStrategyFactoryInternal::melee_aoe;
         creators["cure"] = &MonkStrategyFactoryInternal::cure;
     }
 
 private:
     static Strategy* nc(PlayerbotAI* botAI) { return new GenericMonkNonCombatStrategy(botAI); }
     static Strategy* aoe(PlayerbotAI* botAI) { return new MonkAoeStrategy(botAI); }
+    static Strategy* melee_aoe(PlayerbotAI* botAI) { return new MeleeAoeMonkStrategy(botAI); }
     static Strategy* cure(PlayerbotAI* botAI) { return new MonkCureStrategy(botAI); }
 };
 

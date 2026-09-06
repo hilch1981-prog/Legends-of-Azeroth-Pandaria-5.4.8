@@ -21,6 +21,13 @@ public:
     std::string const getName() override { return "aoe"; }
 };
 
+class MeleeAoeMonkStrategy : public MonkAoeStrategy
+{
+public:
+    MeleeAoeMonkStrategy(PlayerbotAI* botAI) : MonkAoeStrategy(botAI) {}
+    std::string const getName() override { return "melee aoe"; }
+};
+
 class MonkCureStrategy : public Strategy
 {
 public:
