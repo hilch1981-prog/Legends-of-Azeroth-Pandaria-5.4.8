@@ -13,14 +13,14 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of the current run.
 - [x] Upstream `master`: `6f264eea5ac21c4315e529e91554f8c0dd45b232` (`[Core/StatSystem] Modernize Statesystem (#425)`).
 - [x] Fork `master`: same `6f264eea5ac21c4315e529e91554f8c0dd45b232` SHA.
-- [ ] Feature rebase onto `6f264eea...` remains pending. After the current Guard source commits and before this progress commit, compare reports **65 ahead / 1 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`.
+- [ ] Feature rebase onto `6f264eea...` remains pending. Current compare before this progress commit reports **67 ahead / 1 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature HEAD before this progress commit was `d8a37aeaef807ab04184a1c885fccf79ed2f8a41`.
 - [x] Upstream #425 does not modify any Monk feature path; its ThreatManager/TankTarget changes remain compatible with Monk Provoke's repository-native `tank target` selection.
 - [x] No force update or invented rebase resolution was used.
 - [x] Fresh upstream Issue/PR overlap search found no dedicated Monk PlayerBot combat-AI implementation. Issue #413 is bot command management; issue #150 is Tushui Monk NPC scripting.
 
 ### Environment state
 
-- [ ] Real local Git/rebase is currently unavailable because the execution environment still cannot resolve `github.com` (`Could not resolve host: github.com`).
+- [ ] Real local Git/rebase is currently unavailable because the execution environment still cannot resolve `github.com` (`Could not resolve host: github.com`). A fresh `git ls-remote` retry in this run failed with the same DNS error.
 - [ ] Real `PLAYERBOTS=1` compile is therefore still unavailable in this environment.
 - [x] GitHub connector access is healthy and is used for source inspection/writes.
 - [x] Fork workflow `.github/workflows/linux_gcc.yml` is configured for pushes, but GitHub Actions has not provided a usable feature-branch build result; no CI result is being treated as a build substitute.
@@ -30,12 +30,14 @@
 - [x] `Factory/AiFactory.cpp` already contains Monk role/spec-name/default-strategy handling; only `MonkAiObjectContext` construction remains commented.
 - [x] Existing Monk specialization/role pipeline is present and no current evidence justifies changing it.
 - [x] `RandomPlayerbotFactory.cpp` has no concrete Monk defect requiring modification and remains untouched.
-- [x] Module source discovery is recursive; `Classes/monk/` does not require a per-file CMake list entry.
+- [x] Module source discovery is recursive: `modules/CMakeLists.txt` uses `file(GLOB_RECURSE ... *.cpp *.h)` for every valid module, so the new `modules/mod_playerbots/src/strategy/Classes/monk/` files are automatically part of the `modules` target when `PLAYERBOTS` is enabled and require no per-file CMake list entry.
 - [x] Existing class contexts/strategies provide the Strategy / Trigger / Action / AiObjectContext architecture used by the Monk implementation.
 - [x] `ValueContext` provides repository-native `tank target`; current upstream `TankTargetValue` uses ThreatManager state.
 - [x] `PartyMemberToHealValue`, `party member to dispel`, and `group members` are the repository-local primitives used for Monk healing/dispels.
 - [x] Generic `PlayerbotAI::CanCastSpell` preflight ignores power/reagent costs, while real `CastSpell` uses normal cast checks; Monk therefore requires its local DBC-backed power preflight to avoid repeated underfunded high-priority actions.
+- [x] `Player::HasActiveSpell(uint32) const` is a real target-core API, so the Guard override resolver's `HasActiveSpell(123402/115295)` calls are statically API-compatible.
 - [x] `SpellIdValue` resolves spell names only from active learned, non-passive spellbook entries. For multiple same-name unranked entries it iterates IDs in reverse order while repeatedly assigning `castSpellId`, so the numerically lowest matching ID wins. Monk Guard now avoids depending on this ambiguous same-name ordering.
+- [x] Routine Fists of Fury retention has stronger repository-local protection than the earlier audit implied: generic `PlayerbotAI::CanCastSpell` returns false whenever `CURRENT_CHANNELED_SPELL` exists, and `ReachTargetAction::isUseful` also returns false while channeling. Thus normal Monk spell actions and the generic `reach melee` action cannot replace a running Fists channel. `set facing` only changes facing and does not issue movement. Runtime testing is still required for repository-wide emergency/formation/avoid-AoE movement, which may intentionally interrupt a channel for safety.
 
 ## Implementation checklist
 
@@ -86,7 +88,7 @@
 - [x] Tigereye Brew uses exact stack aura `125195` and requests active `116740` at 10 stacks.
 - [x] Touch of Karma low-health defensive path.
 - [x] Touch of Death is Windwalker-only.
-- [x] Static channel control audit: `PlayerbotAI::UpdateAI` only waits early for a current spell in `SPELL_STATE_PREPARING`; a running channeled spell can therefore continue into normal engine evaluation. No Monk-specific no-op/channel lock has been added yet because doing so could incorrectly suppress emergency movement/defensive behavior without runtime evidence.
+- [x] Static Fists of Fury routine-retention audit: normal spell actions are rejected by `CanCastSpell` while any channel exists, `reach melee` is explicitly useless while channeling, and `set facing` does not move. No Monk-specific blanket lock is needed for routine rotation actions. Runtime must still verify whether emergency/formation/avoid-AoE movement interrupts Fists appropriately rather than pathologically.
 - [ ] Runtime Energy/Chi cadence, Tigereye Brew name resolution, and Fists of Fury movement/channel validation.
 
 ### Build / runtime / upstream contribution
@@ -105,13 +107,13 @@
 
 ## Bugs / issues discovered
 
-### Fixed statically in current run — Guard same-name spellbook override ambiguity
+### Fixed statically — Guard same-name spellbook override ambiguity
 
 - **Symptom:** normal Guard `115295` and Glyph-of-Guard override `123402` have the same spell name. Generic PlayerBot `SpellIdValue` collects active same-name spells and, for unranked matches, repeatedly overwrites the selected ID while iterating from high to low. If both variants are active, the generic resolver can finish on `115295` even when `123402` is the active spellbook override.
 - **Target evidence:** target core binds the Guard script to the two player variants; MoP-era spell data identifies `123402` as the ability replacing Guard after Glyph of Guard is active.
 - **Fix:** Monk-only `GetGuardSpellId` prefers `HasActiveSpell(123402)`, then falls back to `HasActiveSpell(115295)`. Guard power preflight, legality check, and execution use that exact resolved ID. `isUseful` treats either Guard aura as already active. Global `SpellIdValue` remains unchanged to avoid unrelated class regressions.
 - **Commits:** `f8b3f222c26c40a52bcdd74f2a8a3435a6516cdc`, `4db14f55c9eab94f2df01472c5c9023cd86c6451`.
-- **Verification:** source/API verification complete; real compile and glyph/no-glyph runtime test pending.
+- **Verification:** `Player::HasActiveSpell(uint32) const` API and source path verified; real compile and glyph/no-glyph runtime test pending.
 
 ### Fixed previously — Touch of Death scope regression
 
@@ -141,11 +143,13 @@
 - **Fix:** narrow Monk-only channel exception, with learned spell/cooldown/power/immunity/range safety checks and final legality left to real cast/`Spell::CheckCast`.
 - **Status:** static evidence complete; compile/runtime pending.
 
-### Intentionally unresolved — Fists of Fury channel retention policy
+### Narrowed in current run — Fists of Fury interruption risk
 
-- Static inspection confirms PlayerBot AI can continue normal engine evaluation while a channeled spell is running once it is past `SPELL_STATE_PREPARING`.
-- For Fists of Fury this means movement or other eligible actions may be able to interrupt the channel, but a blanket channel-lock action would also be capable of suppressing legitimate emergency movement/defensives.
-- **Decision:** keep current Fists of Fury cast implementation and require runtime evidence before adding Monk-specific channel retention/cancellation behavior.
+- Earlier static inspection correctly found that `PlayerbotAI::UpdateAI` resumes normal engine evaluation once a channel is no longer in `SPELL_STATE_PREPARING`, but that alone overstated the risk of routine rotation self-interruption.
+- `PlayerbotAI::CanCastSpell` explicitly rejects ordinary casts whenever `CURRENT_CHANNELED_SPELL` exists, so Jab/Tiger Palm/Blackout Kick/Rising Sun Kick and other normal spell actions cannot replace a running Fists channel through the standard path.
+- `ReachTargetAction::isUseful` explicitly returns false while channeling, so Generic Monk's `reach melee` response does not move the bot during Fists of Fury.
+- `SetFacingTargetAction` only updates facing and does not issue movement.
+- **Decision:** no Monk-specific blanket channel lock is justified. Runtime validation remains necessary for global safety movement (formation, avoid-AoE, forced movement), where interrupting Fists may be the correct behavior.
 
 ### Environment blocker — transient DNS
 
@@ -164,7 +168,10 @@
 
 - Architecture: `modules/mod_playerbots/src/strategy/Classes/warrior/`, `druid/`, `shaman/`, `paladin/`, `priest/`
 - Context/default strategies: `modules/mod_playerbots/src/Factory/AiFactory.cpp`
+- Module build discovery: `modules/CMakeLists.txt`
 - Generic cast behavior: `modules/mod_playerbots/src/strategy/actions/GenericSpellActions.cpp`
+- Generic reach/channel movement guard: `modules/mod_playerbots/src/strategy/actions/ReachTargetActions.cpp`
+- Generic movement/facing behavior: `modules/mod_playerbots/src/strategy/actions/MovementActions.cpp`
 - PlayerBot spell-name resolver: `modules/mod_playerbots/src/strategy/value/SpellIdValue.cpp`
 - PlayerBot real/preflight cast behavior: `modules/mod_playerbots/src/AI/PlayerbotAI.cpp`
 - Cure framework: `modules/mod_playerbots/src/strategy/triggers/CureTriggers.h/.cpp`
@@ -176,5 +183,5 @@
 1. Re-check upstream/fork/feature SHAs and Monk AI overlap at the start of the next run.
 2. Retry local Git network access once. If restored, perform a clean rebase onto `6f264eea...`; abort and record exact conflict paths if any conflict is ambiguous.
 3. Immediately run a real `PLAYERBOTS=1` build after the rebase. Do not enable the `AiFactory::createAiObjectContext` Monk case before this build gate.
-4. If Git/build access is still transiently unavailable, continue static review for compiler/API mismatches and spec-specific behavior gaps without broadening scope. Prioritize Guard override API compatibility and Fists of Fury channel behavior evidence.
+4. If Git/build access is still transiently unavailable, continue static compiler/API audit without broadening scope. The remaining static priority is to inspect any unresolved group-value/target assumptions that affect Renewing Mist/Uplift and then re-check the complete Monk file set for compile-signature mismatches.
 5. After a successful build, fix compile/link issues, then enable `MonkAiObjectContext` construction and rebuild before any upstream issue/PR step.
