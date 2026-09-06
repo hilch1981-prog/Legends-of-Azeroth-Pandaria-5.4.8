@@ -23,7 +23,16 @@ bool HasPowerForSpell(Player* bot, uint32 spellId)
     int32 powerEntryIndex = -1;
     Powers powerType = spellInfo->GetPowerType(bot, &powerEntryIndex);
     int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask(), powerEntryIndex);
-    return powerCost <= 0 || bot->GetPower(powerType) >= powerCost;
+    if (powerCost <= 0)
+        return true;
+
+    if (powerType == POWER_HEALTH)
+        return bot->GetHealth() > uint32(powerCost);
+
+    if (static_cast<uint32>(powerType) >= MAX_POWERS)
+        return false;
+
+    return bot->GetPower(powerType) >= powerCost;
 }
 
 Unit* GetSoothingMistTarget(Player* bot)
