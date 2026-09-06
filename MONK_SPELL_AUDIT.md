@@ -55,6 +55,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Heavy Stagger | 124273 | stagger severity marker |
 | Spear Hand Strike silence | 116709 | secondary silence effect |
 | Internal Medicine | 115451 | Mistweaver passive/aura checked by target-core Detox script before allowing its magic-dispel effect |
+| Muscle Memory passive | 139598 | Mistweaver passive checked by target-core Jab and Spinning Crane Kick scripts before granting the proc buff |
+| Muscle Memory buff | 139597 | exact proc aura granted by Jab when `139598` is known; Spinning Crane Kick can also grant it after three hits |
 | Renewing Mist HoT | 119611 | caster-bound periodic heal used by jump logic and Uplift eligibility |
 | Renewing Mist jump | 119607 | jump selector excludes units already carrying the same caster's `119611` |
 | Uplift allowing cast | 123757 | caster-side helper maintained while bound Renewing Mist auras exist |
@@ -103,6 +105,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - PlayerBot mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
 - Repository `PartyMemberToHeal::Check` accepts same-map LOS targets within `< healDistance * 2`; the Monk Renewing Mist fallback uses the same range/LOS envelope.
 - Mana Tea `115294` consumes `115867` stacks over periodic ticks; the Mana Tea driver generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
+- Target-core `spell_monk_muscle_memory` is wired to Jab spell variants and, when the Monk knows passive `139598`, casts exact proc aura `139597`. The Spinning Crane Kick damage script can also grant `139597` after three hits under the same passive check.
+- Mistweaver PlayerBot therefore no longer keeps Tiger Palm as an unconditional default filler. When party healing does not need higher-priority action, Jab is the melee fallback; exact Muscle Memory aura `139597` triggers Tiger Palm at default-level relevance. This preserves Chi for Enveloping Mist/Uplift during healing pressure while retaining the repository-confirmed Jab -> Muscle Memory -> Tiger Palm loop.
 - Revival `115310` is a raid-area heal and excludes minor guardians from its target list.
 - Mistweaver combat and non-combat healing both use repository-native `party member to heal` plus `reach party member to heal` for out-of-range recovery.
 
@@ -142,6 +146,7 @@ The Monk strategy, trigger, and action names referenced by `AiFactory` and all t
 
 - Fortifying Brew — verify the learned player spell ID in build 18414. Target core directly scripts aura/effect `120954`; MoP-era data points to player cast `115203`, so `120954` must not be hardcoded as the cast without DBC/runtime proof.
 - Guard — verify `HasActiveSpell(115295/123402)`, glyph/no-glyph casting, power cost, cooldown, and resulting aura.
+- Muscle Memory — verify live passive `139598`, proc aura `139597` generation/consumption, the expected mana-return interaction, and Mistweaver Jab/Tiger Palm cadence.
 - Tiger Power / Combo Breaker — verify live Tiger Power aura `125359`, Combo Breaker consumption, and Windwalker Tiger Palm cadence.
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195`.
 - Provoke — verify actual multi-attacker threat selection and successful taunt.
