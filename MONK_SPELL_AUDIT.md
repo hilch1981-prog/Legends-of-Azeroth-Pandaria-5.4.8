@@ -16,7 +16,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Expel Harm | 115072 | `// 115072 - Expel Harm` and damage map | active cast confirmed |
 | Detox | 115450 | `// 115450 - Detox`; magic effect is prevented unless caster has Internal Medicine `115451` | active cast confirmed |
 | Purifying Brew | 119582 | `// 119582 - Purifying Brew`; removes Stagger/Light/Moderate/Heavy Stagger | active cast confirmed |
-| Fortifying Brew | 120954 | `// 120954 - Fortifying Brew` | active cast/aura confirmed |
+| Fortifying Brew | 120954 | `// 120954 - Fortifying Brew` | active cast/aura confirmed in target core; runtime spellbook resolution still follows the normal name path |
 | Elusive Brew | 115308 | `// 115308 - Elusive Brew`; duration consumes Elusive Brew stack aura | active cast confirmed |
 | Spinning Crane Kick | 101546 | `// 101546 - Spinning Crane Kick` aura implementation | active cast confirmed |
 | Rising Sun Kick | 107428 | `// 107428 - Rising Sun Kick`; applies debuff 130320 | active cast confirmed |
@@ -70,7 +70,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Touch of Karma redirected damage | 124280 | redirected-damage helper |
 | Stance of the Wise Serpent | 115070 | Mistweaver stance/aura |
 | Glyph of Guard aura | 123401 | target-core glyph aura symbol used by Guard-related script logic |
-| Guard player variants | 115295 / 123402 | target-core Monk ability variants; external MoP-era references consistently identify `115295` as normal Guard and `123402` as the spellbook override used by Glyph of Guard, but PlayerBot learned/override resolution is still repository/runtime gated |
+| Guard player variants | 115295 / 123402 | target-core Monk ability variants; target-core script wiring and MoP-era data identify `115295` as normal Guard and `123402` as the spellbook override used by Glyph of Guard |
 | Guard statue variants | 118604 / 136070 | Black Ox statue Guard effects, not PlayerBot player-cast choices |
 
 ## Target-core behavior confirmed for strategy design
@@ -83,8 +83,9 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Stagger is represented by `124255` plus Light/Moderate/Heavy markers `124275/124274/124273`.
 - Purifying Brew `119582` removes Stagger and all severity markers.
 - Elusive Brew `115308` derives duration from accumulated stack aura `128939` and removes those stacks.
-- Repository-local `ValueContext` provides `tank target`; current upstream `TankTargetValue` uses ThreatManager state to prioritize a tank target needing aggro. Monk Provoke now targets that value rather than generic `current target`.
-- Target-core `spell_monk_guard` is registered for player ability variants `115295` and `123402`, and `SPELL_MONK_GLYPH_OF_GUARD` is `123401`. MoP-era external references corroborate `115295` as the normal Guard and `123402` as the Glyph-of-Guard spellbook override. This narrows the mapping, but the PlayerBot action remains name-based until this repository's override/learned-spell resolution path is proven or observed at runtime.
+- Repository-local `ValueContext` provides `tank target`; current upstream `TankTargetValue` uses ThreatManager state to prioritize a tank target needing aggro. Monk Provoke targets that value rather than generic `current target`.
+- Target-core `spell_monk_guard` is registered for player ability variants `115295` and `123402`, and `SPELL_MONK_GLYPH_OF_GUARD` is `123401`. MoP-era data corroborates `115295` as normal Guard and `123402` as the Glyph-of-Guard spellbook override.
+- Monk Guard now resolves these two variants explicitly rather than depending on generic same-name ordering: if `HasActiveSpell(123402)` is true it uses the override; otherwise it falls back to active `115295`. The exact resolved ID is used for power preflight, `CanCastSpell`, and execution, and either aura ID suppresses redundant Guard use. Runtime still must prove how this fork exposes the glyph override in the live spellbook.
 
 ### Mistweaver
 
@@ -103,7 +104,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 ### Windwalker
 
 - Rising Sun Kick `107428` applies debuff `130320`.
-- Fists of Fury `113656` is an aura/channel-style periodic damage ability in the target core; its periodic damage amount comes from the Monk-specific damage calculation. Runtime movement/channel interruption behavior is still required before adding custom PlayerBot cancellation rules.
+- Fists of Fury `113656` is an aura/channel-style periodic damage ability in the target core; its periodic damage amount comes from the Monk-specific damage calculation.
+- Repository-local `PlayerbotAI::UpdateAI` only performs its early spell-wait return while a current spell is in `SPELL_STATE_PREPARING`. Once a channeled spell is running, normal engine evaluation may resume. This creates a plausible Fists of Fury interruption risk from movement/other actions, but a blanket channel-lock could also suppress legitimate emergency reactions; runtime evidence is required before adding custom retention/cancellation rules.
 - Chi-consuming spells feed the Tigereye Brew driver and generate stack aura `125195`.
 - Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
 - PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
@@ -121,9 +123,11 @@ This statically resolves the known Windwalker/Brewmaster priority-loop risk with
 
 ## PlayerBot name-resolution evidence
 
-`SpellIdValue` searches only the bot's active learned, non-passive spells matching the requested spell name. That is desirable for Monk actions because PlayerBot does not need a hardcoded active ID when one unambiguous learned spell exists.
+`SpellIdValue` searches the bot's active learned, non-passive spell map for an exact requested spell name. For each same-name candidate it stores the ID in an ordered set and iterates the set in reverse. If a candidate has no numeric rank text, it assigns that ID to `castSpellId` and continues. Therefore, when multiple unranked same-name spells are simultaneously active, the loop can finish on the **numerically lowest** matching ID rather than a semantic spellbook override.
 
-Guard remains deliberately name-based. The target core binds its aura script to player variants `115295` and `123402`, while MoP-era data identifies `123402` as the spellbook override produced by Glyph of Guard. `PlayerbotAI::CanCastSpell(uint32, ...)` normally requires `bot->HasSpell(spellId)`, so directly forcing the override ID without proving how the core exposes the glyphed spell to `HasSpell` could be less correct than the current name lookup. Do not hardcode either Guard variant until repository-local override handling or runtime spellbook evidence proves the correct path.
+`PlayerbotAI::CanCastSpell(std::string, ...)` and `PlayerbotAI::CastSpell(std::string, ...)` both consume this `"spell id"` value, so the ambiguity affects both preflight and execution. The fix is intentionally Monk-local: Guard checks `HasActiveSpell(123402)` first and `HasActiveSpell(115295)` second, then uses the exact returned ID. Global `SpellIdValue` is not changed because its ordering behavior may be relied upon by unrelated legacy/ranked spell paths.
+
+This does not yet claim the live glyph path is fully validated. If the core exposes only normal `115295` in `PlayerSpellMap` and performs the `123402` override elsewhere at cast time, the fallback preserves normal behavior. If it exposes `123402` as an active spellbook replacement, the Monk action now selects it deterministically.
 
 ## Static factory/key audit
 
@@ -131,14 +135,14 @@ The Monk strategy, trigger, and action names referenced by `AiFactory` and all t
 
 ## Still requiring direct runtime/DBC validation
 
-- Guard — base/glyphed ID mapping is narrowed to `115295` / `123402`; prove this core's learned/override-spell resolution and live cast behavior before replacing the name-based action.
+- Guard — static same-name ambiguity is fixed locally; verify `HasActiveSpell(115295/123402)`, glyph/no-glyph casting, power cost, cooldown, and resulting aura in the target runtime.
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195` as expected.
 - Provoke — static `tank target` path is implemented; verify actual multi-attacker threat selection and successful taunt in game.
-- Detox magic — static Internal Medicine `115451` gating now matches the target-core script; verify live magic-dispel selection and party targeting.
+- Detox magic — static Internal Medicine `115451` gating matches the target-core script; verify live magic-dispel selection and party targeting.
 - Life Cocoon — verify emergency party target and range behavior.
 - Soothing/Surging/Enveloping — static channel exception and DBC-backed power preflight are implemented; verify compile and live channel behavior.
 - Renewing Mist/Uplift — static caster-owned HoT logic and power preflight are implemented; verify target spread, Chi use, range, and cadence in a live group.
-- Fists of Fury — active ID, channel-style core behavior, generic moving-channel preflight, and DBC-backed power gate are confirmed statically; verify movement/channel interruption and Energy/Chi rotation interaction in PlayerBot runtime.
+- Fists of Fury — active ID, channel-style core behavior, DBC-backed power gate, and PlayerBot channel-update risk are confirmed statically; verify movement/channel interruption and Energy/Chi rotation interaction before adding any channel lock.
 
 ## Source inconsistency noted
 
