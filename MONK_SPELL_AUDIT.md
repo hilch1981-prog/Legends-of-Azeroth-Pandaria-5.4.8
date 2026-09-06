@@ -14,7 +14,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Keg Smash | 121253 | `// 121253 - Keg Smash`; applies Weakened Blows/Dizzying Haze and energizes after cast | active cast confirmed |
 | Breath of Fire | 115181 | `// Breath of Fire - 115181` | active cast confirmed |
 | Expel Harm | 115072 | `// 115072 - Expel Harm` and damage map | active cast confirmed |
-| Detox | 115450 | `// 115450 - Detox` | active cast confirmed |
+| Detox | 115450 | `// 115450 - Detox`; magic effect is prevented unless caster has Internal Medicine `115451` | active cast confirmed |
 | Purifying Brew | 119582 | `// 119582 - Purifying Brew`; removes Stagger/Light/Moderate/Heavy Stagger | active cast confirmed |
 | Fortifying Brew | 120954 | `// 120954 - Fortifying Brew` | active cast/aura confirmed |
 | Elusive Brew | 115308 | `// 115308 - Elusive Brew`; duration consumes Elusive Brew stack aura | active cast confirmed |
@@ -54,6 +54,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Moderate Stagger | 124274 | stagger severity marker |
 | Heavy Stagger | 124273 | stagger severity marker |
 | Spear Hand Strike silence | 116709 | secondary silence effect |
+| Internal Medicine | 115451 | Mistweaver passive/aura checked by target-core Detox script before allowing its magic-dispel effect |
 | Renewing Mist HoT | 119611 | caster-bound periodic heal used by jump logic and Uplift eligibility |
 | Renewing Mist jump | 119607 | jump selector excludes units already carrying the same caster's `119611` |
 | Uplift allowing cast | 123757 | caster-side helper maintained while bound Renewing Mist auras exist |
@@ -87,15 +88,17 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 
 ### Mistweaver
 
+- Detox `115450` always supplies its ordinary poison/disease dispel behavior, while the target-core script explicitly calls `PreventDefaultEffect` on the magic-dispel effect unless the caster has Internal Medicine `115451`.
+- PlayerBot therefore keeps poison/disease Detox in the generic Monk cure strategy, but magic Detox triggers/actions are registered only from the Mistweaver combat strategy and additionally require aura `115451` before becoming active. This prevents Brewmaster/Windwalker from repeatedly requesting an impossible magic dispel and also handles low-level Mistweavers that do not yet expose the passive.
 - Soothing Mist `115175` is a channel.
 - Surging Mist `116694` and Enveloping Mist `124682` detect Soothing Mist, become directly castable, and redirect their effective heal to the current Soothing Mist channel target.
 - Renewing Mist player spell `115151` produces caster-bound HoT `119611`. On apply/tick the target core maintains Uplift-allowing helper `123757` on the caster.
 - Renewing Mist jump `119607` explicitly excludes units already carrying `119611` from the same caster, then prefers an injured eligible unit when one exists.
 - Uplift `116670` builds its heal target list only from units carrying caster-owned Renewing Mist. Thunder Focus Tea controls whether the refresh effect is applied; the Uplift heal target set remains the caster's Renewing Mist targets.
-- PlayerBot now mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
+- PlayerBot mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
 - Mana Tea `115294` consumes `115867` stacks over periodic ticks; the Mana Tea driver generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
 - Revival `115310` is a raid-area heal and excludes minor guardians from its target list.
-- The Mistweaver strategy now follows existing Priest/Shaman healer behavior by moving toward `party member to heal` when that heal target is outside spell range.
+- The Mistweaver strategy follows existing Priest/Shaman healer behavior by moving toward `party member to heal` when that heal target is outside spell range.
 
 ### Windwalker
 
@@ -104,7 +107,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Chi-consuming spells feed the Tigereye Brew driver and generate stack aura `125195`.
 - Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
 - PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
-- Touch of Death is now kept in the Windwalker strategy rather than the generic Monk strategy, avoiding duplicate Windwalker registration and preventing tank/healer baselines from spending a high-priority offensive resource action.
+- Touch of Death is kept in the Windwalker strategy rather than the generic Monk strategy, avoiding duplicate Windwalker registration and preventing tank/healer baselines from spending a high-priority offensive resource action.
 
 ## PlayerBot resource-preflight evidence
 
@@ -112,7 +115,7 @@ Repository-local `PlayerbotAI::CanCastSpell(Unit*)` constructs its preflight `Sp
 
 The Monk implementation adds a class-local power preflight instead of altering global PlayerBot behavior. It resolves the bot's learned spell ID, then uses target-core `SpellInfo::GetPowerType` plus `SpellInfo::CalcPowerCost` and compares the result with the bot's current power. No Energy/Chi/Mana cost is hardcoded. Positive-cost `POWER_HEALTH` is checked against current health, and unexpected special power values outside `MAX_POWERS` fail closed rather than indexing normal power storage.
 
-This gate covers the main Monk resource-sensitive combat/heal actions, including Jab, Tiger Palm, Blackout Kick, Spinning Crane Kick, Expel Harm, Touch of Death, Keg Smash, Guard, Purifying Brew, Breath of Fire, Soothing/Renewing/Surging/Enveloping Mist, Life Cocoon, Revival, Uplift, Rising Sun Kick, and Fists of Fury. Final cast legality still remains with the normal target-core `Spell::CheckCast` path.
+This gate covers the main Monk resource-sensitive combat/heal actions, including Jab, Tiger Palm, Blackout Kick, Spinning Crane Kick, Expel Harm, Touch of Death, Detox and party Detox variants, Keg Smash, Guard, Purifying Brew, Breath of Fire, Soothing/Renewing/Surging/Enveloping Mist, Life Cocoon, Revival, Uplift, Rising Sun Kick, and Fists of Fury. Final cast legality still remains with the normal target-core `Spell::CheckCast` path.
 
 This statically resolves the known Windwalker/Brewmaster priority-loop risk without claiming runtime rotation tuning is complete. Fists of Fury movement/channel timing and live Energy/Chi cadence still require an executable PlayerBot test environment.
 
@@ -131,6 +134,7 @@ The Monk strategy, trigger, and action names referenced by `AiFactory` and all t
 - Guard — base/glyphed ID mapping is narrowed to `115295` / `123402`; prove this core's learned/override-spell resolution and live cast behavior before replacing the name-based action.
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195` as expected.
 - Provoke — static `tank target` path is implemented; verify actual multi-attacker threat selection and successful taunt in game.
+- Detox magic — static Internal Medicine `115451` gating now matches the target-core script; verify live magic-dispel selection and party targeting.
 - Life Cocoon — verify emergency party target and range behavior.
 - Soothing/Surging/Enveloping — static channel exception and DBC-backed power preflight are implemented; verify compile and live channel behavior.
 - Renewing Mist/Uplift — static caster-owned HoT logic and power preflight are implemented; verify target spread, Chi use, range, and cadence in a live group.
