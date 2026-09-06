@@ -73,6 +73,23 @@ public:
     HeavyStaggerTrigger(PlayerbotAI* botAI) : HasAuraTrigger(botAI, "heavy stagger") {}
 };
 
+// Tiger Palm costs Chi for Windwalker. Do not leave it as an unconditional
+// default filler or it can consume every available point before Blackout Kick.
+// These exact-aura triggers make it a maintenance/proc action instead.
+class NoTigerPowerTrigger : public Trigger
+{
+public:
+    NoTigerPowerTrigger(PlayerbotAI* botAI) : Trigger(botAI, "no tiger power") {}
+    bool IsActive() override;
+};
+
+class ComboBreakerTigerPalmTrigger : public Trigger
+{
+public:
+    ComboBreakerTigerPalmTrigger(PlayerbotAI* botAI) : Trigger(botAI, "combo breaker tiger palm") {}
+    bool IsActive() override;
+};
+
 // Target-core spell_monk.cpp confirms 125195 as the accumulated Tigereye Brew
 // stack aura and 116740 as the active cast that consumes up to 10 stacks.
 // Use the exact stack aura ID here instead of HasAuraStackTrigger: the generic
