@@ -120,7 +120,9 @@ class CastGuardAction : public CastBuffSpellAction
 {
 public:
     CastGuardAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "guard") {}
+    bool Execute(Event event) override;
     bool isPossible() override;
+    bool isUseful() override;
 };
 
 class CastElusiveBrewAction : public CastBuffSpellAction
