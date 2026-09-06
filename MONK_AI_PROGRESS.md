@@ -13,7 +13,7 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of the current run.
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master` is at the same `06fb98107158ee5a513e673a42674693fb4db7a2` SHA.
-- [ ] Feature rebase onto current `06fb9810...` remains pending. Compare immediately before this progress commit reports **89 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature source/doc HEAD before this progress commit is `6693f5d79d644db72aa06931f3d8db11c2deeacf`.
+- [ ] Feature rebase onto current `06fb9810...` remains pending. Compare immediately before this progress commit reports **92 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature source/doc HEAD before this progress commit is `467bfbd6092aea89d0b41340005f316019f37d9b`.
 - [x] Upstream #426 was audited for PlayerBot overlap. It updates generic threat APIs (`getThreat` -> `GetThreat`) in `GenericTriggers.cpp`, `TankTargetValue.cpp`, `AttackersValue.cpp`, `DpsTargetValue.cpp`, and `ThreatValues.cpp` plus core combat/threat internals. The Monk feature does not directly call the removed lowercase threat API and continues to consume repository-native `tank target`, so no Monk source rewrite is currently required by #426.
 - [x] No force update or invented rebase resolution was used.
 - [x] Fresh upstream Issue/PR overlap search found no dedicated Monk PlayerBot combat-AI implementation. Historical Monk PRs found previously are unrelated to PlayerBot combat AI: #363 fixes Earth/Wind/Fire crashes, #168 adjusts Monk starting action bars, and #268 adjusts Pandaren action bars/stance behavior. Issue #413 is bot command management; issue #150 is Tushui Monk NPC scripting.
@@ -23,9 +23,10 @@
 - [ ] Real local Git/rebase is currently unavailable because the execution environment still cannot resolve `github.com` (`Could not resolve host: github.com`). The local Git network probe in this run failed with the same DNS error.
 - [ ] Real local `PLAYERBOTS=1` compile is therefore still unavailable in this environment.
 - [x] GitHub connector access is healthy and is used for source inspection/writes.
-- [x] Fork-local validation PR #1 (`CI validation: Monk PlayerBot AI workstream`) remains open against fork `master` and is used solely to seek repository-native CI/build evidence. It is **not** the upstream contribution PR and must not be merged as a substitute for the contribution workflow.
-- [x] GitHub has recomputed validation PR #1 as `mergeable: true` for current head `6693f5d79d644db72aa06931f3d8db11c2deeacf`; the earlier `mergeable: false` signal was transient/stale rather than proof of a source conflict.
-- [ ] GitHub Actions still has no workflow run for current feature head `6693f5d7...`. No CI result is being treated as a build substitute.
+- [x] Fork-local validation PR #1 (`CI validation: Monk PlayerBot AI workstream`) remains open against fork `master` and is used only for repository-side validation signals. It is **not** the upstream contribution PR and must not be merged as a substitute for the contribution workflow.
+- [ ] The current normalized PR #1 snapshot reports `mergeable: false`, but also still reports stale base SHA `6f264eea...` while fork `master` is actually `06fb9810...`; the direct compare API reports the expected 92-ahead/2-behind divergence. Treat this PR mergeability flag as stale/unresolved rather than proof of a source conflict; do not force-update either branch.
+- [ ] GitHub Actions still has zero workflow runs for the current feature branch. No CI result is being treated as a build substitute.
+- [x] The repository's default GCC workflow is **not** a valid PlayerBot build gate: it configures with `cmake ../ -DTOOLS=1 -DELUNA=0 ...` and omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` whenever `PLAYERBOTS` is false. Even if that workflow starts running, it cannot prove the Monk module compiles unless the build is explicitly configured with `PLAYERBOTS=1`.
 
 ## Repository facts verified
 
@@ -41,8 +42,10 @@
 - [x] `GroupMembersValue` returns the full group member list and falls back to the bot itself when solo; Monk group scans therefore have a repository-native source and do not depend on an invented roster.
 - [x] Generic `PlayerbotAI::CanCastSpell` preflight ignores power/reagent costs, while real `CastSpell` uses normal cast checks; Monk therefore uses class-local DBC-backed power preflight for resource-sensitive actions.
 - [x] Target `SpellInfo` API exposes `GetPowerType(Unit const*, int32*)` and `CalcPowerCost(Unit const*, SpellSchoolMask, int32)`, matching the Monk helper's signatures.
-- [x] `Player::HasActiveSpell(uint32) const` is a real target-core API, so the Guard override resolver's `HasActiveSpell(123402/115295)` calls are statically API-compatible.
-- [x] `SpellIdValue` same-name unranked ordering can resolve the numerically lower ID; Monk Guard avoids depending on that ambiguity.
+- [x] `Player::HasActiveSpell(uint32) const` is a real target-core API, so Monk-local Guard and Mana Tea override resolvers are statically API-compatible.
+- [x] `SpellIdValue` same-name unranked ordering can resolve the numerically lower ID; Monk Guard and Mana Tea avoid depending on that ambiguity.
+- [x] `PlayerbotAI::GetAura(std::string, ...)` scans aura spell names, while `CastBuffSpellAction::isUseful()` delegates to that name-based aura lookup. Stack-consuming/channel abilities should not depend on buff-style "already has aura" usefulness semantics.
+- [x] Target core explicitly implements normal Mana Tea `115294` as a channel/aura that consumes one `115867` stack on apply and another per periodic tick, and glyphed Mana Tea `123761` as an instant spell whose `CheckCast` requires at least two stacks.
 - [x] Routine Fists of Fury retention is protected by generic channel checks: ordinary casts and `reach melee` do not replace a running channel; runtime is still required for global safety/formation movement.
 - [x] Non-combat `nc` is loaded for Monk through the universal non-combat strategy path. Because there is no separate Monk case in `AddDefaultNonCombatStrategies`, Mistweaver-specific out-of-combat behavior must be specialization-gated inside `GenericMonkNonCombatStrategy`.
 - [x] Target-core `spell_monk.cpp` explicitly identifies Combo Breaker: Tiger Palm as aura `118864` and Combo Breaker: Blackout Kick as aura `116768`; both are emitted by `spell_monk_combo_breaker`. MoP-era spell data corroborates Tiger Power as aura `125359`; live build-18414 runtime verification remains pending.
@@ -84,13 +87,13 @@
 - [x] Surging Mist and Enveloping Mist narrow exception for legal casts during Soothing Mist channel, preserving the channel target.
 - [x] Renewing Mist prefers an eligible group member without this Monk's caster-owned HoT `119611`.
 - [x] Uplift requires useful caster-owned Renewing Mist coverage before spending Chi.
-- [x] Mana Tea stack gate.
+- [x] Mana Tea resolves active variants explicitly: prefer glyphed `123761` when active, otherwise `115294`; normal channel is allowed from one stack and glyphed cast retains the target-core two-stack minimum.
 - [x] Life Cocoon / Revival baseline.
 - [x] Heal-target out-of-range movement recovery using the same repository pattern as existing healers.
 - [x] Magic Detox requires Internal Medicine `115451`; poison/disease Detox remains generic Monk utility.
 - [x] Mistweaver non-combat support added in `GenericMonkNonCombatStrategy`: specialization-gated Wise Serpent stance, magic Detox, range recovery, and basic Soothing/Renewing/Surging/Enveloping party healing. Brewmaster/Windwalker do not receive these healer-only non-combat triggers. Commit `766a77e6467e9bead069041bbb045556209c6a83`.
 - [x] Remove unconditional Mistweaver Tiger Palm default Chi spending: Jab is now the healthy-party melee fallback, and exact Muscle Memory aura `139597` triggers Tiger Palm at default-level relevance below healing actions. Source commits `85fc716466cf69f62d81349f2a54b2cc123bb58d`, `52f38ba9ac22b94693150ab30fae837619aa1e81`, `5a44a35a7f89daaf45fd3ddbc36efef1379f2d8e`, `40b8530758b097127ccc0f9029aa6ea0477f86f7`.
-- [ ] Runtime combat/non-combat channel, healing cadence, Renewing Mist spread, Uplift, Mana Tea, Muscle Memory/Jab/Tiger Palm cadence, and magic-dispel validation.
+- [ ] Runtime combat/non-combat channel, healing cadence, Renewing Mist spread, Uplift, Mana Tea normal/glyphed behavior, Muscle Memory/Jab/Tiger Palm cadence, and magic-dispel validation.
 
 ### Windwalker
 
@@ -121,7 +124,17 @@
 
 ## Bugs / issues discovered
 
-### Fixed this run — Mistweaver default Tiger Palm could starve healing Chi
+### Fixed this run — Mana Tea variant resolution and stack gating were too generic
+
+- **Symptom 1:** `CastManaTeaAction::isUseful()` required at least two `115867` stacks for every Mana Tea cast, so the normal `115294` channel could not be used with exactly one stack even though the target core consumes one stack immediately on aura application.
+- **Symptom 2:** the action inherited generic same-name spell resolution despite target core defining a second active Mana Tea variant, glyphed `123761`; this has the same class of override ambiguity already proven for Guard.
+- **Target-core evidence:** `// 115294 - Mana Tea` removes one `115867` stack on apply and one per periodic tick. `// 123761 - Mana Tea` has an explicit `CheckCast` requiring at least two `115867` stacks.
+- **Repository evidence:** `Player::HasActiveSpell` is available; generic string-based casts use `SpellIdValue`; and buff-style usefulness performs a name-based aura lookup, which is the wrong semantic dependency for a stack-consuming regen action.
+- **Fix:** add Monk-local `GetManaTeaSpellId`, prefer active `123761`, fall back to active `115294`, execute and preflight with the exact ID, permit normal Mana Tea from one stack, and retain the two-stack minimum only for the glyphed variant. The action no longer depends on `CastBuffSpellAction::isUseful()`.
+- **Commit:** `15fa4919b7a995d0e164fb89841a8dbcabe7ff9c`; spell ledger updated by `467bfbd6092aea89d0b41340005f316019f37d9b`.
+- **Verification:** target-core spell scripts and repository APIs were statically verified. Real compile plus live glyph/no-glyph spellbook behavior and stack consumption remain pending.
+
+### Fixed previously — Mistweaver default Tiger Palm could starve healing Chi
 
 - **Symptom:** `HealMonkStrategy::getDefaultActions()` kept `tiger palm` as an unconditional melee fallback after Soothing/Renewing Mist. When a Mistweaver entered melee with Chi available, that default action could spend Chi without a Muscle Memory proc and compete with Enveloping Mist/Uplift resource needs.
 - **Target-core evidence:** `spell_monk_muscle_memory` is attached to Jab variants and casts exact proc aura `139597` when the Monk knows passive `139598`. The Spinning Crane Kick damage script can also grant `139597` after three hits under the same passive check.
@@ -193,12 +206,13 @@
 
 - Ordinary casts are rejected while `CURRENT_CHANNELED_SPELL` exists, and `reach melee` is useless while channeling. `set facing` does not move. No blanket channel lock is added; runtime must verify global safety/formation/avoid-AoE movement behavior.
 
-### Environment blocker — transient DNS / CI unavailable
+### Environment blocker — transient DNS / no valid PlayerBot CI evidence
 
 - Local Git probe still fails with `Could not resolve host: github.com`.
 - This prevents trustworthy local rebase and real local `PLAYERBOTS=1` compile but is not a source build failure.
-- Fork-local validation PR #1 is currently mergeable, so there is no GitHub-computed merge conflict on the present branch; however current feature head still has no workflow run.
-- Do not mark build/runtime boxes complete until actual compile/runtime evidence exists.
+- Fork-local validation PR #1 currently has no workflow run, and its normalized mergeability/base metadata is stale relative to current fork `master`.
+- More importantly, the repository's default GCC workflow does not set `PLAYERBOTS=1`; `modules/CMakeLists.txt` therefore excludes `mod_playerbots` in that workflow. A future green default GCC run must **not** be counted as the Monk build gate unless configuration explicitly enables PlayerBots.
+- Do not mark build/runtime boxes complete until actual `PLAYERBOTS=1` compile/runtime evidence exists.
 
 ## External overlap / coordination
 
@@ -216,7 +230,7 @@
 - Generic cast behavior: `modules/mod_playerbots/src/strategy/actions/GenericSpellActions.cpp`
 - Generic reach/channel movement guard: `modules/mod_playerbots/src/strategy/actions/ReachTargetActions.cpp`
 - PlayerBot spell-name resolver: `modules/mod_playerbots/src/strategy/value/SpellIdValue.cpp`
-- PlayerBot real/preflight cast behavior: `modules/mod_playerbots/src/AI/PlayerbotAI.cpp`
+- PlayerBot real/preflight cast behavior and name-based aura lookup: `modules/mod_playerbots/src/AI/PlayerbotAI.cpp`
 - Healing target behavior: `modules/mod_playerbots/src/strategy/value/PartyMemberToHealValue.cpp`
 - Group roster behavior: `modules/mod_playerbots/src/strategy/value/GroupValues.cpp`
 - Cure framework: `modules/mod_playerbots/src/strategy/triggers/CureTriggers.h/.cpp`
@@ -226,8 +240,8 @@
 ## Next deterministic action
 
 1. Re-check upstream/fork/feature SHAs and Monk AI overlap at the start of the next run.
-2. Check fork validation PR #1/current feature head for a GCC workflow run/status. If a run appears, inspect build jobs/logs and fix any Monk compiler/linker failures immediately.
-3. Retry local Git network access once. If restored, rebase cleanly onto `06fb9810...`; abort and record exact conflict paths if any conflict is ambiguous.
-4. Run a real `PLAYERBOTS=1` build after rebase/network recovery. Do not enable the `AiFactory::createAiObjectContext` Monk case before a real build gate passes.
-5. If build access remains transiently unavailable, continue narrow static review of rotation/resource correctness and target-core API usage only; do not broaden feature scope or open the upstream contribution issue/PR.
-6. After a successful build, fix compile/link issues, enable `MonkAiObjectContext` construction, rebuild, then perform Brewmaster/Mistweaver/Windwalker runtime validation including Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm cadence before entering the upstream coordination gate.
+2. Retry local Git network access once. If restored, rebase cleanly onto `06fb9810...`; abort and record exact conflict paths if any conflict is ambiguous.
+3. Configure a real build with `-DPLAYERBOTS=1` after rebase/network recovery. Do not rely on the repository's default GCC workflow because it excludes `mod_playerbots` without that flag.
+4. Fix any compile/link failures, then enable `MonkAiObjectContext` construction in `AiFactory.cpp` only after the pre-activation PlayerBot build passes; rebuild again with `PLAYERBOTS=1`.
+5. If local build access remains transiently unavailable, continue only narrow static review of Monk resource/variant/cast behavior and periodically re-check whether fork-side Actions can provide an explicitly `PLAYERBOTS=1` validation path without contaminating the upstream contribution diff.
+6. After both PlayerBot builds pass, perform Brewmaster/Mistweaver/Windwalker runtime validation including Guard and Mana Tea glyph/no-glyph paths, Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm cadence, and Fists of Fury channel behavior before entering the upstream coordination gate.
