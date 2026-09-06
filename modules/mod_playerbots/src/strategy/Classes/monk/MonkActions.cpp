@@ -118,6 +118,11 @@ bool CastDetoxDiseaseOnPartyAction::isPossible()
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CurePartyMemberAction::isPossible();
 }
 
+bool CastDetoxMagicOnPartyAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CurePartyMemberAction::isPossible();
+}
+
 bool CastKegSmashAction::isPossible()
 {
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
