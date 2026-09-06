@@ -16,6 +16,8 @@ void TankMonkStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericMonkStrategy::InitTriggers(triggers);
 
+    triggers.push_back(new TriggerNode("no stance of the sturdy ox", NextAction::array(0, new NextAction("stance of the sturdy ox", ACTION_HIGH + 9), nullptr)));
+
     // Target-core spell_monk.cpp confirms Blackout Kick applies/extends Shuffle for Brewmaster.
     triggers.push_back(new TriggerNode("no shuffle", NextAction::array(0, new NextAction("blackout kick", ACTION_HIGH + 6), nullptr)));
 
