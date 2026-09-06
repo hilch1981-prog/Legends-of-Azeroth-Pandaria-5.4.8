@@ -109,6 +109,7 @@ public:
         creators["revival"] = &MonkAiObjectContextInternal::revival;
         creators["uplift"] = &MonkAiObjectContextInternal::uplift;
         creators["mana tea"] = &MonkAiObjectContextInternal::mana_tea;
+        creators["tigereye brew"] = &MonkAiObjectContextInternal::tigereye_brew;
         creators["rising sun kick"] = &MonkAiObjectContextInternal::rising_sun_kick;
         creators["fists of fury"] = &MonkAiObjectContextInternal::fists_of_fury;
         creators["touch of karma"] = &MonkAiObjectContextInternal::touch_of_karma;
@@ -140,6 +141,7 @@ private:
     static Action* revival(PlayerbotAI* botAI) { return new CastRevivalAction(botAI); }
     static Action* uplift(PlayerbotAI* botAI) { return new CastUpliftAction(botAI); }
     static Action* mana_tea(PlayerbotAI* botAI) { return new CastManaTeaAction(botAI); }
+    static Action* tigereye_brew(PlayerbotAI* botAI) { return new CastTigereyeBrewAction(botAI); }
     static Action* rising_sun_kick(PlayerbotAI* botAI) { return new CastRisingSunKickAction(botAI); }
     static Action* fists_of_fury(PlayerbotAI* botAI) { return new CastFistsOfFuryAction(botAI); }
     static Action* touch_of_karma(PlayerbotAI* botAI) { return new CastTouchOfKarmaAction(botAI); }

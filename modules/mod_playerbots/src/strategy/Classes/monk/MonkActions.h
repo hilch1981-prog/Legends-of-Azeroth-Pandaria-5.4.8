@@ -164,6 +164,12 @@ public:
     CastManaTeaAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "mana tea") {}
 };
 
+class CastTigereyeBrewAction : public CastBuffSpellAction
+{
+public:
+    CastTigereyeBrewAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "tigereye brew") {}
+};
+
 class CastRisingSunKickAction : public CastMeleeSpellAction
 {
 public:
