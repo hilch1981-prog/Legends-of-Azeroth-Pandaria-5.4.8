@@ -1,5 +1,6 @@
 #include "MonkActions.h"
 
+#include "ObjectAccessor.h"
 #include "Playerbots.h"
 #include "Spell.h"
 #include "SpellAuras.h"
@@ -383,10 +384,10 @@ bool CastManaTeaAction::isUseful()
     if (!spellId || !stacks)
         return false;
 
-    // Normal Mana Tea consumes one stack on channel application and then one per
-    // periodic tick. The glyphed 123761 variant has a target-core CheckCast gate
-    // requiring at least two stacks, so do not impose that two-stack minimum on
-    // the normal 115294 channel.
+    // Normal Mana Tea sizes its channel duration from the current stack count and
+    // consumes one stack per periodic tick. The glyphed 123761 variant has a
+    // target-core CheckCast gate requiring at least two stacks, so do not impose
+    // that two-stack minimum on the normal 115294 channel.
     uint8 requiredStacks = spellId == SPELL_MONK_MANA_TEA_GLYPH_OVERRIDE ? 2 : 1;
     return stacks->GetStackAmount() >= requiredStacks;
 }
