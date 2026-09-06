@@ -84,42 +84,42 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Purifying Brew `119582` removes Stagger and all severity markers.
 - Elusive Brew `115308` derives duration from accumulated stack aura `128939` and removes those stacks.
 - Repository-local `ValueContext` provides `tank target`; current upstream `TankTargetValue` uses ThreatManager state to prioritize a tank target needing aggro. Monk Provoke targets that value rather than generic `current target`.
-- Target-core `spell_monk_guard` is registered for player ability variants `115295` and `123402`, and `SPELL_MONK_GLYPH_OF_GUARD` is `123401`. MoP-era data corroborates `115295` as normal Guard and `123402` as the Glyph-of-Guard spellbook override.
-- Monk Guard now resolves these two variants explicitly rather than depending on generic same-name ordering: if `HasActiveSpell(123402)` is true it uses the override; otherwise it falls back to active `115295`. The exact resolved ID is used for power preflight, `CanCastSpell`, and execution, and either aura ID suppresses redundant Guard use. Runtime still must prove how this fork exposes the glyph override in the live spellbook.
+- Target-core `spell_monk_guard` is registered for player ability variants `115295` and `123402`, and `SPELL_MONK_GLYPH_OF_GUARD` is `123401`.
+- Monk Guard resolves these two variants explicitly rather than depending on generic same-name ordering: if `HasActiveSpell(123402)` is true it uses the override; otherwise it falls back to active `115295`. The exact resolved ID is used for power preflight, `CanCastSpell`, and execution, and either aura ID suppresses redundant Guard use. Runtime still must prove how this fork exposes the glyph override in the live spellbook.
 
 ### Mistweaver
 
-- Detox `115450` always supplies its ordinary poison/disease dispel behavior, while the target-core script explicitly calls `PreventDefaultEffect` on the magic-dispel effect unless the caster has Internal Medicine `115451`.
-- PlayerBot therefore keeps poison/disease Detox in the generic Monk cure strategy, but magic Detox triggers/actions are registered only from the Mistweaver combat strategy and additionally require aura `115451` before becoming active. This prevents Brewmaster/Windwalker from repeatedly requesting an impossible magic dispel and also handles low-level Mistweavers that do not yet expose the passive.
+- Detox `115450` always supplies ordinary poison/disease dispel behavior, while the target-core script explicitly calls `PreventDefaultEffect` on its magic-dispel effect unless the caster has Internal Medicine `115451`.
+- PlayerBot keeps poison/disease Detox in generic Monk cure/non-combat utility. Magic Detox triggers/actions require `115451` and are wired only for Mistweaver: in the combat `heal` strategy and in the specialization-gated Mistweaver section of the universal non-combat `nc` strategy. Brewmaster/Windwalker therefore do not request impossible magic dispels.
+- `AiFactory::AddDefaultNonCombatStrategies` has no separate Monk branch, so all Monk specs receive the class `nc` strategy through the universal non-combat path. Mistweaver-only Wise Serpent stance maintenance, magic Detox, heal-target range recovery, and basic party healing are therefore explicitly gated by `SPEC_MONK_MISTWEAVER` inside `GenericMonkNonCombatStrategy`.
 - Soothing Mist `115175` is a channel.
 - Surging Mist `116694` and Enveloping Mist `124682` detect Soothing Mist, become directly castable, and redirect their effective heal to the current Soothing Mist channel target.
 - Renewing Mist player spell `115151` produces caster-bound HoT `119611`. On apply/tick the target core maintains Uplift-allowing helper `123757` on the caster.
 - Renewing Mist jump `119607` explicitly excludes units already carrying `119611` from the same caster, then prefers an injured eligible unit when one exists.
 - Uplift `116670` builds its heal target list only from units carrying caster-owned Renewing Mist. Thunder Focus Tea controls whether the refresh effect is applied; the Uplift heal target set remains the caster's Renewing Mist targets.
 - PlayerBot mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
+- Repository `PartyMemberToHeal::Check` accepts same-map LOS targets within `< healDistance * 2`; the Monk Renewing Mist fallback uses the same range/LOS envelope.
 - Mana Tea `115294` consumes `115867` stacks over periodic ticks; the Mana Tea driver generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
 - Revival `115310` is a raid-area heal and excludes minor guardians from its target list.
-- The Mistweaver strategy follows existing Priest/Shaman healer behavior by moving toward `party member to heal` when that heal target is outside spell range.
+- Mistweaver combat and non-combat healing both use repository-native `party member to heal` plus `reach party member to heal` for out-of-range recovery.
 
 ### Windwalker
 
 - Rising Sun Kick `107428` applies debuff `130320`.
 - Fists of Fury `113656` is an aura/channel-style periodic damage ability in the target core; its periodic damage amount comes from the Monk-specific damage calculation.
-- Repository-local `PlayerbotAI::UpdateAI` only performs its early spell-wait return while a current spell is in `SPELL_STATE_PREPARING`. Once a channeled spell is running, normal engine evaluation may resume. This creates a plausible Fists of Fury interruption risk from movement/other actions, but a blanket channel-lock could also suppress legitimate emergency reactions; runtime evidence is required before adding custom retention/cancellation rules.
+- Repository `PlayerbotAI::UpdateAI` can resume engine evaluation after the initial channel preparation state, but routine self-interruption is narrower than that fact alone suggests: generic `PlayerbotAI::CanCastSpell` rejects ordinary spell casts while `CURRENT_CHANNELED_SPELL` exists, `ReachTargetAction::isUseful` rejects `reach melee` while channeling, and `set facing` changes facing without issuing movement. No Monk-specific blanket channel lock is justified statically. Runtime must still verify global safety/formation/avoid-AoE movement, where interrupting Fists may be intentional.
 - Chi-consuming spells feed the Tigereye Brew driver and generate stack aura `125195`.
 - Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
 - PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
-- Touch of Death is kept in the Windwalker strategy rather than the generic Monk strategy, avoiding duplicate Windwalker registration and preventing tank/healer baselines from spending a high-priority offensive resource action.
+- Touch of Death is kept in the Windwalker strategy rather than the generic Monk strategy, preventing tank/healer baselines from spending the high-priority offensive resource action.
 
 ## PlayerBot resource-preflight evidence
 
 Repository-local `PlayerbotAI::CanCastSpell(Unit*)` constructs its preflight `Spell` with `TRIGGERED_IGNORE_POWER_AND_REAGENT_COST`. That means a generic `SpellCanBeCastTrigger` / `CastSpellAction::isPossible()` result does not prove that the bot currently has enough Mana, Energy, or Chi. The real `PlayerbotAI::CastSpell` path later uses `TRIGGERED_NONE` and `Spell::CheckCast(false)`, so an underfunded high-priority action can otherwise be selected repeatedly and fail only at execution time.
 
-The Monk implementation adds a class-local power preflight instead of altering global PlayerBot behavior. It resolves the bot's learned spell ID, then uses target-core `SpellInfo::GetPowerType` plus `SpellInfo::CalcPowerCost` and compares the result with the bot's current power. No Energy/Chi/Mana cost is hardcoded. Positive-cost `POWER_HEALTH` is checked against current health, and unexpected special power values outside `MAX_POWERS` fail closed rather than indexing normal power storage.
+The Monk implementation adds a class-local power preflight instead of altering global PlayerBot behavior. It resolves the bot's learned spell ID, then uses target-core `SpellInfo::GetPowerType` plus `SpellInfo::CalcPowerCost` and compares the result with the bot's current power. Target `SpellInfo.h` exposes the exact signatures used by the helper. No Energy/Chi/Mana cost is hardcoded. Positive-cost `POWER_HEALTH` is checked against current health, and unexpected special power values outside `MAX_POWERS` fail closed rather than indexing normal power storage.
 
 This gate covers the main Monk resource-sensitive combat/heal actions, including Jab, Tiger Palm, Blackout Kick, Spinning Crane Kick, Expel Harm, Touch of Death, Detox and party Detox variants, Keg Smash, Guard, Purifying Brew, Breath of Fire, Soothing/Renewing/Surging/Enveloping Mist, Life Cocoon, Revival, Uplift, Rising Sun Kick, and Fists of Fury. Final cast legality still remains with the normal target-core `Spell::CheckCast` path.
-
-This statically resolves the known Windwalker/Brewmaster priority-loop risk without claiming runtime rotation tuning is complete. Fists of Fury movement/channel timing and live Energy/Chi cadence still require an executable PlayerBot test environment.
 
 ## PlayerBot name-resolution evidence
 
@@ -127,7 +127,7 @@ This statically resolves the known Windwalker/Brewmaster priority-loop risk with
 
 `PlayerbotAI::CanCastSpell(std::string, ...)` and `PlayerbotAI::CastSpell(std::string, ...)` both consume this `"spell id"` value, so the ambiguity affects both preflight and execution. The fix is intentionally Monk-local: Guard checks `HasActiveSpell(123402)` first and `HasActiveSpell(115295)` second, then uses the exact returned ID. Global `SpellIdValue` is not changed because its ordering behavior may be relied upon by unrelated legacy/ranked spell paths.
 
-This does not yet claim the live glyph path is fully validated. If the core exposes only normal `115295` in `PlayerSpellMap` and performs the `123402` override elsewhere at cast time, the fallback preserves normal behavior. If it exposes `123402` as an active spellbook replacement, the Monk action now selects it deterministically.
+This does not yet claim the live glyph path is fully validated. If the core exposes only normal `115295` in `PlayerSpellMap` and performs the `123402` override elsewhere at cast time, the fallback preserves normal behavior. If it exposes `123402` as an active spellbook replacement, the Monk action selects it deterministically.
 
 ## Static factory/key audit
 
@@ -135,14 +135,14 @@ The Monk strategy, trigger, and action names referenced by `AiFactory` and all t
 
 ## Still requiring direct runtime/DBC validation
 
-- Guard — static same-name ambiguity is fixed locally; verify `HasActiveSpell(115295/123402)`, glyph/no-glyph casting, power cost, cooldown, and resulting aura in the target runtime.
-- Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195` as expected.
-- Provoke — static `tank target` path is implemented; verify actual multi-attacker threat selection and successful taunt in game.
-- Detox magic — static Internal Medicine `115451` gating matches the target-core script; verify live magic-dispel selection and party targeting.
+- Guard — verify `HasActiveSpell(115295/123402)`, glyph/no-glyph casting, power cost, cooldown, and resulting aura.
+- Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195`.
+- Provoke — verify actual multi-attacker threat selection and successful taunt.
+- Detox magic — verify live magic-dispel selection and party targeting in both combat and Mistweaver non-combat recovery.
 - Life Cocoon — verify emergency party target and range behavior.
-- Soothing/Surging/Enveloping — static channel exception and DBC-backed power preflight are implemented; verify compile and live channel behavior.
-- Renewing Mist/Uplift — static caster-owned HoT logic and power preflight are implemented; verify target spread, Chi use, range, and cadence in a live group.
-- Fists of Fury — active ID, channel-style core behavior, DBC-backed power gate, and PlayerBot channel-update risk are confirmed statically; verify movement/channel interruption and Energy/Chi rotation interaction before adding any channel lock.
+- Soothing/Surging/Enveloping — verify compile and live channel behavior, including non-combat recovery.
+- Renewing Mist/Uplift — verify target spread, Chi use, range, and cadence in a live group.
+- Fists of Fury — verify movement/channel interruption and Energy/Chi rotation interaction before adding any channel lock.
 
 ## Source inconsistency noted
 
