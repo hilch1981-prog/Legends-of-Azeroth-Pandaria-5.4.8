@@ -68,7 +68,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Expel Harm damage | 115129 | damage effect generated from Expel Harm healing |
 | Touch of Karma redirected damage | 124280 | redirected-damage helper |
 | Stance of the Wise Serpent | 115070 | Mistweaver stance/aura |
-| Guard player variants | 123402 / 115295 | target-core Monk ability variants; exact learned-name resolution remains runtime/DBC gated |
+| Glyph of Guard aura | 123401 | target-core glyph aura symbol used by Guard-related script logic |
+| Guard player variants | 115295 / 123402 | target-core Monk ability variants; external MoP-era references consistently identify `115295` as normal Guard and `123402` as the spellbook override used by Glyph of Guard, but PlayerBot learned/override resolution is still repository/runtime gated |
 | Guard statue variants | 118604 / 136070 | Black Ox statue Guard effects, not PlayerBot player-cast choices |
 
 ## Target-core behavior confirmed for strategy design
@@ -82,6 +83,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Purifying Brew `119582` removes Stagger and all severity markers.
 - Elusive Brew `115308` derives duration from accumulated stack aura `128939` and removes those stacks.
 - Repository-local `ValueContext` provides `tank target`; current upstream `TankTargetValue` uses ThreatManager state to prioritize a tank target needing aggro. Monk Provoke now targets that value rather than generic `current target`.
+- Target-core `spell_monk_guard` is registered for player ability variants `115295` and `123402`, and `SPELL_MONK_GLYPH_OF_GUARD` is `123401`. MoP-era external references corroborate `115295` as the normal Guard and `123402` as the Glyph-of-Guard spellbook override. This narrows the mapping, but the PlayerBot action remains name-based until this repository's override/learned-spell resolution path is proven or observed at runtime.
 
 ### Mistweaver
 
@@ -93,6 +95,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - PlayerBot now mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
 - Mana Tea `115294` consumes `115867` stacks over periodic ticks; the Mana Tea driver generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
 - Revival `115310` is a raid-area heal and excludes minor guardians from its target list.
+- The Mistweaver strategy now follows existing Priest/Shaman healer behavior by moving toward `party member to heal` when that heal target is outside spell range.
 
 ### Windwalker
 
@@ -101,12 +104,15 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Chi-consuming spells feed the Tigereye Brew driver and generate stack aura `125195`.
 - Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
 - PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
+- Touch of Death is now kept in the Windwalker strategy rather than the generic Monk strategy, avoiding duplicate Windwalker registration and preventing tank/healer baselines from spending a high-priority offensive resource action.
 
 ## PlayerBot resource-preflight evidence
 
 Repository-local `PlayerbotAI::CanCastSpell(Unit*)` constructs its preflight `Spell` with `TRIGGERED_IGNORE_POWER_AND_REAGENT_COST`. That means a generic `SpellCanBeCastTrigger` / `CastSpellAction::isPossible()` result does not prove that the bot currently has enough Mana, Energy, or Chi. The real `PlayerbotAI::CastSpell` path later uses `TRIGGERED_NONE` and `Spell::CheckCast(false)`, so an underfunded high-priority action can otherwise be selected repeatedly and fail only at execution time.
 
-The Monk implementation now adds a class-local power preflight instead of altering global PlayerBot behavior. It resolves the bot's learned spell ID, then uses target-core `SpellInfo::GetPowerType` plus `SpellInfo::CalcPowerCost` and compares the result with the bot's current power. No Energy/Chi/Mana cost is hardcoded. This gate covers the main Monk resource-sensitive combat/heal actions, including Jab, Tiger Palm, Blackout Kick, Spinning Crane Kick, Expel Harm, Touch of Death, Keg Smash, Guard, Purifying Brew, Breath of Fire, Soothing/Renewing/Surging/Enveloping Mist, Life Cocoon, Revival, Uplift, Rising Sun Kick, and Fists of Fury. Final cast legality still remains with the normal target-core `Spell::CheckCast` path.
+The Monk implementation adds a class-local power preflight instead of altering global PlayerBot behavior. It resolves the bot's learned spell ID, then uses target-core `SpellInfo::GetPowerType` plus `SpellInfo::CalcPowerCost` and compares the result with the bot's current power. No Energy/Chi/Mana cost is hardcoded. Positive-cost `POWER_HEALTH` is checked against current health, and unexpected special power values outside `MAX_POWERS` fail closed rather than indexing normal power storage.
+
+This gate covers the main Monk resource-sensitive combat/heal actions, including Jab, Tiger Palm, Blackout Kick, Spinning Crane Kick, Expel Harm, Touch of Death, Keg Smash, Guard, Purifying Brew, Breath of Fire, Soothing/Renewing/Surging/Enveloping Mist, Life Cocoon, Revival, Uplift, Rising Sun Kick, and Fists of Fury. Final cast legality still remains with the normal target-core `Spell::CheckCast` path.
 
 This statically resolves the known Windwalker/Brewmaster priority-loop risk without claiming runtime rotation tuning is complete. Fists of Fury movement/channel timing and live Energy/Chi cadence still require an executable PlayerBot test environment.
 
@@ -114,11 +120,15 @@ This statically resolves the known Windwalker/Brewmaster priority-loop risk with
 
 `SpellIdValue` searches only the bot's active learned, non-passive spells matching the requested spell name. That is desirable for Monk actions because PlayerBot does not need a hardcoded active ID when one unambiguous learned spell exists.
 
-Guard remains deliberately unresolved: the target core binds the Guard script to two player-ability variants (`123402`, `115295`). If both expose the same name and are simultaneously active/learned, `SpellIdValue` selection behavior must be validated against the target DBC/player spellbook rather than guessed. Do not hardcode either variant solely to make the static implementation appear complete.
+Guard remains deliberately name-based. The target core binds its aura script to player variants `115295` and `123402`, while MoP-era data identifies `123402` as the spellbook override produced by Glyph of Guard. `PlayerbotAI::CanCastSpell(uint32, ...)` normally requires `bot->HasSpell(spellId)`, so directly forcing the override ID without proving how the core exposes the glyphed spell to `HasSpell` could be less correct than the current name lookup. Do not hardcode either Guard variant until repository-local override handling or runtime spellbook evidence proves the correct path.
+
+## Static factory/key audit
+
+The Monk strategy, trigger, and action names referenced by `AiFactory` and all three specialization strategies were cross-checked against `MonkAiObjectContext`. No missing or misspelled Monk-local factory keys were found. Global names used by Monk strategies such as `tank assist`, `dps assist`, `reach party member to heal`, and standard health/group triggers are repository-wide contexts and intentionally are not re-registered in `MonkAiObjectContext`.
 
 ## Still requiring direct runtime/DBC validation
 
-- Guard — exact learned player variant/name resolution for `123402` vs `115295`.
+- Guard — base/glyphed ID mapping is narrowed to `115295` / `123402`; prove this core's learned/override-spell resolution and live cast behavior before replacing the name-based action.
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195` as expected.
 - Provoke — static `tank target` path is implemented; verify actual multi-attacker threat selection and successful taunt in game.
 - Life Cocoon — verify emergency party target and range behavior.
@@ -138,4 +148,4 @@ A spell mapping or behavioral assumption is marked verified only with one of the
 2. target-core DBC-backed learned spell/resource data; or
 3. successful `PLAYERBOTS=1` build followed by target 5.4.8 runtime lookup/cast evidence.
 
-Do not infer a verified MoP 5.4.8 mapping solely from a modern WoW database, external wiki, or another emulator branch.
+External MoP-era databases/addons may corroborate or narrow an ambiguity, but they do not replace target-core/DBC/runtime evidence for a final `[x]` verification decision.
