@@ -55,13 +55,16 @@ public:
     HeavyStaggerTrigger(PlayerbotAI* botAI) : HasAuraTrigger(botAI, "heavy stagger") {}
 };
 
-// The target core consumes up to 10 Tigereye Brew stacks when casting the active
-// buff. HasAuraStackTrigger keeps the internal aura lookup key as "tigereye brew"
-// while the factory exposes the semantic trigger name "tigereye brew ready".
-class TigereyeBrewReadyTrigger : public HasAuraStackTrigger
+// Target-core spell_monk.cpp confirms 125195 as the accumulated Tigereye Brew
+// stack aura and 116740 as the active cast that consumes up to 10 stacks.
+// Use the exact stack aura ID here instead of HasAuraStackTrigger: the generic
+// helper forces a duration check, while this stack aura's DBC duration semantics
+// have not yet been verified in the build-18414 runtime.
+class TigereyeBrewReadyTrigger : public Trigger
 {
 public:
-    TigereyeBrewReadyTrigger(PlayerbotAI* botAI) : HasAuraStackTrigger(botAI, "tigereye brew", 10) {}
+    TigereyeBrewReadyTrigger(PlayerbotAI* botAI) : Trigger(botAI, "tigereye brew ready") {}
+    bool IsActive() override;
 };
 
 class MonkCurePoisonTrigger : public NeedCureTrigger
