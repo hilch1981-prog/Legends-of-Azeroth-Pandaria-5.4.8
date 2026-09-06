@@ -63,6 +63,7 @@ public:
         creators["heavy stagger"] = &MonkTriggerFactoryInternal::heavy_stagger;
         creators["no tiger power"] = &MonkTriggerFactoryInternal::no_tiger_power;
         creators["combo breaker tiger palm"] = &MonkTriggerFactoryInternal::combo_breaker_tiger_palm;
+        creators["combo breaker blackout kick"] = &MonkTriggerFactoryInternal::combo_breaker_blackout_kick;
         creators["tigereye brew ready"] = &MonkTriggerFactoryInternal::tigereye_brew_ready;
         creators["cure poison"] = &MonkTriggerFactoryInternal::cure_poison;
         creators["cure disease"] = &MonkTriggerFactoryInternal::cure_disease;
@@ -86,6 +87,7 @@ private:
     static Trigger* heavy_stagger(PlayerbotAI* botAI) { return new HeavyStaggerTrigger(botAI); }
     static Trigger* no_tiger_power(PlayerbotAI* botAI) { return new NoTigerPowerTrigger(botAI); }
     static Trigger* combo_breaker_tiger_palm(PlayerbotAI* botAI) { return new ComboBreakerTigerPalmTrigger(botAI); }
+    static Trigger* combo_breaker_blackout_kick(PlayerbotAI* botAI) { return new ComboBreakerBlackoutKickTrigger(botAI); }
     static Trigger* tigereye_brew_ready(PlayerbotAI* botAI) { return new TigereyeBrewReadyTrigger(botAI); }
     static Trigger* cure_poison(PlayerbotAI* botAI) { return new MonkCurePoisonTrigger(botAI); }
     static Trigger* cure_disease(PlayerbotAI* botAI) { return new MonkCureDiseaseTrigger(botAI); }
