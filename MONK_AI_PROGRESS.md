@@ -29,6 +29,7 @@
 - [x] Existing Warrior/Shaman/Druid/Paladin implementations were audited for AiObjectContext, strategy, action, trigger, role, cure, healing, AoE, and tank patterns.
 - [x] `Strategy.h` confirms the action priorities used by this implementation, including `ACTION_INTERRUPT`, `ACTION_DISPEL`, and `ACTION_EMERGENCY`.
 - [x] `GenericSpellActions.h`, `GenericTriggers.h`, and `CureTriggers.h` signatures were checked against the initial Monk action/trigger wrappers.
+- [x] Shaman's `melee aoe` pattern was checked and used to preserve distinct strategy identity for Windwalker AoE rather than aliasing it to an object named only `aoe`.
 
 ### Implementation checklist
 
@@ -67,8 +68,19 @@
   - Adds `MONK_SPELL_AUDIT.md` using the target core's `src/server/scripts/Spells/spell_monk.cpp` as the primary evidence source.
   - Confirms active target-core IDs including Blackout Kick `100784`, Fortifying Brew `120954`, Provoke `118635`, Soothing Mist `115175`, Elusive Brew `115308`, Spinning Crane Kick `101546`, Renewing Mist `115151`, Mana Tea regeneration `115294`, Uplift `116670`, and Touch of Death `115080`.
   - Separates secondary/internal aura/effect IDs from still-unresolved active cast IDs so donor/modern IDs are not accidentally treated as verified 5.4.8 data.
+- `70064249f9aacb922013495ae7e5857b82314e84` — `fix(playerbots): preserve Monk melee aoe strategy identity`
+  - Adds a distinct `MeleeAoeMonkStrategy` whose `getName()` is `melee aoe` and maps the corresponding factory key to it, matching the repository's Shaman-style strategy identity pattern.
 
 ## Bugs / Issues discovered
+
+### Fixed: `melee aoe` factory alias returned a strategy named only `aoe`
+
+- **Symptom:** the initial Monk context mapped both `aoe` and `melee aoe` to `MonkAoeStrategy`, whose identity is `aoe`.
+- **Scope / affected paths:** `GenericMonkStrategy.h`, `MonkAiObjectContext.cpp`.
+- **Cause:** confirmed static architecture mismatch with repository-local strategy naming patterns.
+- **Resolution:** fixed by introducing `MeleeAoeMonkStrategy` with its own `melee aoe` identity and factory creator.
+- **Fix commit:** `70064249f9aacb922013495ae7e5857b82314e84`.
+- **Verification:** compared against Shaman's separate `MeleeAoeShamanStrategy` / `melee aoe` factory pattern; compiler/runtime verification still pending.
 
 ### Build execution environment unavailable in this run
 
