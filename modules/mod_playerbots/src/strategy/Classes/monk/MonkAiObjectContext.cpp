@@ -50,6 +50,9 @@ class MonkTriggerFactoryInternal : public NamedObjectContext<Trigger>
 public:
     MonkTriggerFactoryInternal()
     {
+        creators["no stance of the sturdy ox"] = &MonkTriggerFactoryInternal::no_sturdy_ox;
+        creators["no stance of the wise serpent"] = &MonkTriggerFactoryInternal::no_wise_serpent;
+        creators["no stance of the fierce tiger"] = &MonkTriggerFactoryInternal::no_fierce_tiger;
         creators["keg smash"] = &MonkTriggerFactoryInternal::keg_smash;
         creators["rising sun kick"] = &MonkTriggerFactoryInternal::rising_sun_kick;
         creators["fists of fury"] = &MonkTriggerFactoryInternal::fists_of_fury;
@@ -66,6 +69,9 @@ public:
     }
 
 private:
+    static Trigger* no_sturdy_ox(PlayerbotAI* botAI) { return new NoStanceOfTheSturdyOxTrigger(botAI); }
+    static Trigger* no_wise_serpent(PlayerbotAI* botAI) { return new NoStanceOfTheWiseSerpentTrigger(botAI); }
+    static Trigger* no_fierce_tiger(PlayerbotAI* botAI) { return new NoStanceOfTheFierceTigerTrigger(botAI); }
     static Trigger* keg_smash(PlayerbotAI* botAI) { return new KegSmashTrigger(botAI); }
     static Trigger* rising_sun_kick(PlayerbotAI* botAI) { return new RisingSunKickTrigger(botAI); }
     static Trigger* fists_of_fury(PlayerbotAI* botAI) { return new FistsOfFuryTrigger(botAI); }
@@ -86,6 +92,9 @@ class MonkAiObjectContextInternal : public NamedObjectContext<Action>
 public:
     MonkAiObjectContextInternal()
     {
+        creators["stance of the sturdy ox"] = &MonkAiObjectContextInternal::sturdy_ox;
+        creators["stance of the wise serpent"] = &MonkAiObjectContextInternal::wise_serpent;
+        creators["stance of the fierce tiger"] = &MonkAiObjectContextInternal::fierce_tiger;
         creators["jab"] = &MonkAiObjectContextInternal::jab;
         creators["tiger palm"] = &MonkAiObjectContextInternal::tiger_palm;
         creators["blackout kick"] = &MonkAiObjectContextInternal::blackout_kick;
@@ -118,6 +127,9 @@ public:
     }
 
 private:
+    static Action* sturdy_ox(PlayerbotAI* botAI) { return new CastStanceOfTheSturdyOxAction(botAI); }
+    static Action* wise_serpent(PlayerbotAI* botAI) { return new CastStanceOfTheWiseSerpentAction(botAI); }
+    static Action* fierce_tiger(PlayerbotAI* botAI) { return new CastStanceOfTheFierceTigerAction(botAI); }
     static Action* jab(PlayerbotAI* botAI) { return new CastJabAction(botAI); }
     static Action* tiger_palm(PlayerbotAI* botAI) { return new CastTigerPalmAction(botAI); }
     static Action* blackout_kick(PlayerbotAI* botAI) { return new CastBlackoutKickAction(botAI); }
