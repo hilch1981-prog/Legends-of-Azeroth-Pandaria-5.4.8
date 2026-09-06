@@ -15,6 +15,8 @@ void HealMonkStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericMonkStrategy::InitTriggers(triggers);
     triggers.push_back(new TriggerNode("no stance of the wise serpent", NextAction::array(0, new NextAction("stance of the wise serpent", ACTION_HIGH + 9), nullptr)));
+    triggers.push_back(new TriggerNode("cure magic", NextAction::array(0, new NextAction("detox", ACTION_DISPEL), nullptr)));
+    triggers.push_back(new TriggerNode("cure magic on party", NextAction::array(0, new NextAction("detox magic on party", ACTION_DISPEL), nullptr)));
     triggers.push_back(new TriggerNode("party member to heal out of spell range", NextAction::array(0, new NextAction("reach party member to heal", ACTION_CRITICAL_HEAL + 10), nullptr)));
     triggers.push_back(new TriggerNode("party member critical health", NextAction::array(0, new NextAction("life cocoon on party", ACTION_EMERGENCY), new NextAction("surging mist on party", ACTION_INTERRUPT), nullptr)));
     triggers.push_back(new TriggerNode("party member low health", NextAction::array(0, new NextAction("enveloping mist on party", ACTION_HIGH + 5), new NextAction("surging mist on party", ACTION_HIGH + 4), nullptr)));
