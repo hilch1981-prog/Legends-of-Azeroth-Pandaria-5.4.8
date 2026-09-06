@@ -102,6 +102,14 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
 - PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
 
+## PlayerBot resource-preflight evidence
+
+Repository-local `PlayerbotAI::CanCastSpell(Unit*)` constructs its preflight `Spell` with `TRIGGERED_IGNORE_POWER_AND_REAGENT_COST`. That means a generic `SpellCanBeCastTrigger` / `CastSpellAction::isPossible()` result does not prove that the bot currently has enough Mana, Energy, or Chi. The real `PlayerbotAI::CastSpell` path later uses `TRIGGERED_NONE` and `Spell::CheckCast(false)`, so an underfunded high-priority action can otherwise be selected repeatedly and fail only at execution time.
+
+The Monk implementation now adds a class-local power preflight instead of altering global PlayerBot behavior. It resolves the bot's learned spell ID, then uses target-core `SpellInfo::GetPowerType` plus `SpellInfo::CalcPowerCost` and compares the result with the bot's current power. No Energy/Chi/Mana cost is hardcoded. This gate covers the main Monk resource-sensitive combat/heal actions, including Jab, Tiger Palm, Blackout Kick, Spinning Crane Kick, Expel Harm, Touch of Death, Keg Smash, Guard, Purifying Brew, Breath of Fire, Soothing/Renewing/Surging/Enveloping Mist, Life Cocoon, Revival, Uplift, Rising Sun Kick, and Fists of Fury. Final cast legality still remains with the normal target-core `Spell::CheckCast` path.
+
+This statically resolves the known Windwalker/Brewmaster priority-loop risk without claiming runtime rotation tuning is complete. Fists of Fury movement/channel timing and live Energy/Chi cadence still require an executable PlayerBot test environment.
+
 ## PlayerBot name-resolution evidence
 
 `SpellIdValue` searches only the bot's active learned, non-passive spells matching the requested spell name. That is desirable for Monk actions because PlayerBot does not need a hardcoded active ID when one unambiguous learned spell exists.
@@ -114,9 +122,9 @@ Guard remains deliberately unresolved: the target core binds the Guard script to
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195` as expected.
 - Provoke — static `tank target` path is implemented; verify actual multi-attacker threat selection and successful taunt in game.
 - Life Cocoon — verify emergency party target and range behavior.
-- Soothing/Surging/Enveloping — static channel exception is implemented; verify compile and live channel behavior.
-- Renewing Mist/Uplift — static caster-owned HoT logic is implemented; verify target spread, Chi use, range, and cadence in a live group.
-- Fists of Fury — active ID and channel-style core behavior are confirmed; verify movement/channel interruption and Energy/Chi rotation interaction in PlayerBot runtime.
+- Soothing/Surging/Enveloping — static channel exception and DBC-backed power preflight are implemented; verify compile and live channel behavior.
+- Renewing Mist/Uplift — static caster-owned HoT logic and power preflight are implemented; verify target spread, Chi use, range, and cadence in a live group.
+- Fists of Fury — active ID, channel-style core behavior, generic moving-channel preflight, and DBC-backed power gate are confirmed statically; verify movement/channel interruption and Energy/Chi rotation interaction in PlayerBot runtime.
 
 ## Source inconsistency noted
 
