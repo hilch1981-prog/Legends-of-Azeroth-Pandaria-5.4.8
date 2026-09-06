@@ -12,6 +12,8 @@ constexpr uint32 SPELL_MONK_GUARD_GLYPH_OVERRIDE = 123402;
 constexpr uint32 SPELL_MONK_ELUSIVE_BREW_STACKS = 128939;
 constexpr uint32 SPELL_MONK_MANA_TEA_STACKS = 115867;
 constexpr uint32 SPELL_MONK_RENEWING_MIST_HOT = 119611;
+constexpr uint32 SPELL_MONK_COMBO_BREAKER_TIGER_PALM = 118864;
+constexpr uint32 SPELL_MONK_COMBO_BREAKER_BLACKOUT_KICK = 116768;
 
 bool HasPowerForSpell(Player* bot, uint32 spellId)
 {
@@ -102,12 +104,18 @@ bool CastJabAction::isPossible()
 
 bool CastTigerPalmAction::isPossible()
 {
-    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+    // Combo Breaker makes Tiger Palm free. Do not let the class-local power preflight
+    // suppress the proc at zero Chi; the normal cast path still performs all other legality checks.
+    return (bot->HasAura(SPELL_MONK_COMBO_BREAKER_TIGER_PALM) || HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell))) &&
+        CastMeleeSpellAction::isPossible();
 }
 
 bool CastBlackoutKickAction::isPossible()
 {
-    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+    // Combo Breaker makes Blackout Kick free. As with Tiger Palm, bypass only the
+    // conservative power preflight while the exact proc aura is active.
+    return (bot->HasAura(SPELL_MONK_COMBO_BREAKER_BLACKOUT_KICK) || HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell))) &&
+        CastMeleeSpellAction::isPossible();
 }
 
 bool CastSpinningCraneKickAction::isPossible()
