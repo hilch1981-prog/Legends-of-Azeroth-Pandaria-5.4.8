@@ -9,6 +9,7 @@ namespace
 constexpr uint32 SPELL_MONK_SOOTHING_MIST = 115175;
 constexpr uint32 SPELL_MONK_ELUSIVE_BREW_STACKS = 128939;
 constexpr uint32 SPELL_MONK_MANA_TEA_STACKS = 115867;
+constexpr uint32 SPELL_MONK_RENEWING_MIST_HOT = 119611;
 
 Unit* GetSoothingMistTarget(Player* bot)
 {
@@ -62,7 +63,7 @@ bool CastElusiveBrewAction::isUseful()
 
 bool CastProvokeAction::isUseful()
 {
-    Unit* target = AI_VALUE(Unit*, "current target");
+    Unit* target = GetTarget();
     return target && target->GetTarget() != bot->GetGUID() && CastSpellAction::isUseful();
 }
 
@@ -122,6 +123,31 @@ bool CastSurgingMistOnPartyAction::isUseful()
     }
 
     return HealPartyMemberAction::isUseful();
+}
+
+bool CastUpliftAction::isUseful()
+{
+    if (!CastSpellAction::isUseful())
+        return false;
+
+    uint32 injuredRenewingMistTargets = 0;
+    for (ObjectGuid const guid : AI_VALUE(GuidVector, "group members"))
+    {
+        Player* member = ObjectAccessor::FindPlayer(guid);
+        if (!member || !member->IsAlive() || !member->IsInWorld() || member->GetMapId() != bot->GetMapId())
+            continue;
+
+        if (member->GetHealthPct() >= sPlayerbotAIConfig->mediumHealth)
+            continue;
+
+        if (!member->GetAura(SPELL_MONK_RENEWING_MIST_HOT, bot->GetGUID()))
+            continue;
+
+        if (++injuredRenewingMistTargets >= 2)
+            return true;
+    }
+
+    return false;
 }
 
 bool CastManaTeaAction::isUseful()
