@@ -13,21 +13,21 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of this run and upstream re-checked before handoff.
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master`: same `06fb98107158ee5a513e673a42674693fb4db7a2`.
-- [ ] Direct compare immediately before this progress-only commit: feature **99 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; this documentation commit itself adds one further ahead-only commit.
-- [ ] Rebase remains pending because the local execution environment cannot resolve/reach `github.com`; no force update or invented rebase was attempted.
+- [x] Feature branch was safely synchronized with current fork/upstream `master` through fork-local sync PR #3 (`master` -> `feature/monk-ai-object-context`) after GitHub reported the merge as clean. The merge commit is `5041141c2846d2da9d16e69aaf57e4cdb312f8c3`; no force-push or history rewrite was used.
+- [x] Post-sync compare: feature **101 ahead / 0 behind**, with merge base equal to current `master` `06fb98107158ee5a513e673a42674693fb4db7a2` before this documentation commit.
 - [x] Upstream #426 audited: it changes generic combat/threat APIs, but Monk Provoke uses repository-native `tank target` and does not directly call the renamed ThreatManager getter.
 - [x] Fresh upstream Issue/PR searches found no materially overlapping Monk PlayerBot combat-AI implementation. Historical Monk PRs #363/#168/#268 and issues #413/#150 remain unrelated to this workstream.
 
 ### Validation environment
 
-- [ ] Local Git/rebase and local compile remain blocked by environment connectivity (`Could not resolve host: github.com`; direct outbound connectivity also unavailable).
+- [ ] Local Git and local compile remain blocked by environment connectivity (`Could not resolve host: github.com`; direct outbound connectivity also unavailable). Current source synchronization is no longer blocked because the master changes were merged through GitHub itself.
 - [x] GitHub connector reads/writes are healthy.
 - [x] Fork PR #1 remains validation-only and is **not** the upstream contribution PR. GitHub mergeability has fluctuated while head/base moved, so it is not treated as a compile or conflict gate.
-- [ ] Feature branch has zero GitHub Actions runs.
+- [ ] Feature branch still has zero GitHub Actions runs after synchronization.
 - [x] Repository default GCC workflow is **not** a valid PlayerBot build gate: it omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` when `PLAYERBOTS` is false.
 - [x] Fork-only branch `ci/monk-ai-playerbots` was created from feature source. Validation commit `0c51fa9c3ecb7e3ae97f419296217bd208175096` changes only `.github/workflows/linux_gcc.yml` to add `-DPLAYERBOTS=1`; this change is intentionally absent from the feature branch/upstream contribution diff.
-- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) was opened specifically to exercise the workflow's `pull_request: opened` trigger. It is build-validation-only, is **not** the upstream implementation PR, and must not be merged.
-- [ ] PR #2 / `ci/monk-ai-playerbots` still has zero workflow runs/status contexts after the PR-open event. The fork also reports zero Actions runs repository-wide, so no CI PASS/FAIL is inferred.
+- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) remains open specifically as build validation. It is mergeable, but it is build-validation-only, is **not** the upstream implementation PR, and must not be merged.
+- [ ] PR #2 / `ci/monk-ai-playerbots` still has zero workflow runs/status contexts after the PR-open event. The fork reports no Actions run for that branch, so no CI PASS/FAIL is inferred.
 
 ## Architecture / implementation state
 
@@ -69,7 +69,7 @@
 - [x] Magic Detox requires Internal Medicine `115451`; poison/disease Detox remains generic Monk utility.
 - [x] Healthy-party melee fallback is Jab; Tiger Palm is requested from exact Muscle Memory proc `139597`, avoiding unconditional healing-Chi spending.
 - [x] Mana Tea same-name variants are explicit: active glyphed `123761` is preferred, otherwise normal `115294`; normal is useful from one stack while glyphed requires two.
-- [x] **Mana Tea evidence corrected this run:** target-core normal `115294` `HandleApply` does **not** consume a stack immediately. It sizes channel duration from the current `115867` stack count; each periodic tick consumes one stack. Glyphed `123761` has an explicit two-stack `CheckCast` and consumes two in its cast handler. The one-stack normal threshold remains correct. `MONK_SPELL_AUDIT.md` corrected in `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`; the matching source comment was corrected in `c9346401e269971ed8d1434be1873116f0182e38`.
+- [x] Target-core normal `115294` Mana Tea sizes channel duration from current `115867` stacks and consumes one stack per periodic tick; glyphed `123761` requires/consumes two stacks. The one-stack normal threshold remains correct.
 - [ ] Runtime normal/glyphed Mana Tea, healing cadence, Renewing Mist/Uplift, Muscle Memory cadence, and magic-dispel validation.
 
 ### Windwalker
@@ -87,6 +87,7 @@
 
 ## Key fixes in the current implementation
 
+- Safe master synchronization without rewriting feature history: fork-local PR #3, merge commit `5041141c2846d2da9d16e69aaf57e4cdb312f8c3`.
 - Mana Tea explicit variant resolution and 1-stack normal / 2-stack glyph thresholds: `15fa4919b7a995d0e164fb89841a8dbcabe7ff9c`.
 - Mana Tea spell evidence correction: `9313d49c15fb92d8e41ea7a48099712ac3ae1f59`; source-comment/direct-include hardening: `c9346401e269971ed8d1434be1873116f0182e38`.
 - Mistweaver Jab -> Muscle Memory `139597` -> Tiger Palm flow: `85fc7164`, `52f38ba9`, `5a44a35a`, `40b85307`.
@@ -100,7 +101,7 @@
 
 ## Build / runtime / upstream gate
 
-- [ ] Rebase feature branch onto current upstream/fork `master` when Git network access returns.
+- [x] Feature branch contains current upstream/fork `master` without force-push/history rewrite.
 - [ ] Pre-activation build with `-DPLAYERBOTS=1` passes.
 - [ ] Enable Monk `AiObjectContext` construction in `AiFactory.cpp`.
 - [ ] Post-activation build with `-DPLAYERBOTS=1` passes.
@@ -115,20 +116,21 @@
 
 ## Exact blocker
 
-The current blocker is **build/runtime execution availability**, not a known source compiler error. The local runtime cannot reach GitHub to obtain/rebase the full tree. The fork reports zero Actions runs repository-wide, and opening fork-local PR #2 against the isolated `ci/monk-ai-playerbots` branch did not produce a run even though that workflow explicitly listens for `pull_request: opened` and configures `-DPLAYERBOTS=1`. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL.
+The current blocker is **build/runtime execution availability**, not synchronization and not a known source compiler error. The feature branch now contains current `master` and is 0 commits behind, but the local runtime still cannot resolve/reach `github.com`, so the full checkout/build environment cannot be refreshed or compiled here. The fork build-validation PR #2 still has no Actions run/status even though its isolated workflow change enables `-DPLAYERBOTS=1`. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL.
 
 ## External coordination
 
 - No dedicated overlapping upstream Monk PlayerBot combat-AI issue/PR found this run.
 - Fork PR #1 is mergeability/diff validation only.
 - Fork PR #2 and branch `ci/monk-ai-playerbots` are PlayerBot-build validation artifacts only; they are not upstream contribution artifacts and must not be merged.
+- Fork PR #3 was synchronization-only and is merged; it is not an upstream contribution artifact.
 - No upstream implementation issue/PR will be opened before the build gate.
 
 ## Next deterministic action
 
 1. Re-check upstream/fork/feature SHAs and upstream Monk AI Issue/PR overlap.
 2. Re-check fork PR #2 / `ci/monk-ai-playerbots` for an Actions run/status; if a real `PLAYERBOTS=1` run appears, inspect every compile/link failure and fix Monk failures immediately.
-3. Retry local Git network once. If restored, rebase cleanly onto current upstream/fork `master`; stop the rebase and record exact paths for any ambiguous conflict rather than overwriting upstream work.
-4. Run the real pre-activation build with `-DPLAYERBOTS=1`.
-5. After it passes, enable Monk `AiObjectContext` construction in `AiFactory.cpp` and rebuild with `PLAYERBOTS=1`.
-6. After both builds pass, execute the Brewmaster/Mistweaver/Windwalker runtime matrix, then enter the upstream issue/24-hour/PR coordination gate.
+3. Retry local Git network once. If restored, fetch the already-synchronized feature tree and run the real pre-activation build with `-DPLAYERBOTS=1`.
+4. After the pre-activation build passes, enable Monk `AiObjectContext` construction in `AiFactory.cpp` and rebuild with `PLAYERBOTS=1`.
+5. After both builds pass, execute the Brewmaster/Mistweaver/Windwalker runtime matrix.
+6. Re-run the upstream Monk AI overlap search, create/update the appropriate upstream issue, respect the recorded maintainer-response/24-hour coordination gate, and only then open the upstream implementation PR.
