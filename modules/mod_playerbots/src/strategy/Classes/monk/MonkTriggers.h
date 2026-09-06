@@ -97,6 +97,16 @@ public:
     bool IsActive() override;
 };
 
+// Mistweaver Jab applies the exact target-core Muscle Memory proc aura 139597
+// when the character knows the 139598 passive. Consume that proc with Tiger Palm
+// instead of spending healing Chi on an unconditional Tiger Palm filler.
+class MuscleMemoryTrigger : public Trigger
+{
+public:
+    MuscleMemoryTrigger(PlayerbotAI* botAI) : Trigger(botAI, "muscle memory") {}
+    bool IsActive() override;
+};
+
 // Target-core spell_monk.cpp confirms 125195 as the accumulated Tigereye Brew
 // stack aura and 116740 as the active cast that consumes up to 10 stacks.
 // Use the exact stack aura ID here instead of HasAuraStackTrigger: the generic
