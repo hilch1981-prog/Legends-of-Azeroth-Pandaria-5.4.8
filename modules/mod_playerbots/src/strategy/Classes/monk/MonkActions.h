@@ -4,6 +4,24 @@
 #include "GenericSpellActions.h"
 #include "SharedDefines.h"
 
+class CastStanceOfTheSturdyOxAction : public CastBuffSpellAction
+{
+public:
+    CastStanceOfTheSturdyOxAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "stance of the sturdy ox") {}
+};
+
+class CastStanceOfTheWiseSerpentAction : public CastBuffSpellAction
+{
+public:
+    CastStanceOfTheWiseSerpentAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "stance of the wise serpent") {}
+};
+
+class CastStanceOfTheFierceTigerAction : public CastBuffSpellAction
+{
+public:
+    CastStanceOfTheFierceTigerAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "stance of the fierce tiger") {}
+};
+
 class CastJabAction : public CastMeleeSpellAction
 {
 public:
