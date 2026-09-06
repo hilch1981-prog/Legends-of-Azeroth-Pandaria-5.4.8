@@ -13,7 +13,7 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of the current run.
 - [x] Upstream `master`: `6f264eea5ac21c4315e529e91554f8c0dd45b232` (`[Core/StatSystem] Modernize Statesystem (#425)`).
 - [x] Fork `master`: same `6f264eea5ac21c4315e529e91554f8c0dd45b232` SHA.
-- [ ] Feature rebase onto `6f264eea...` remains pending. Current compare after the Windwalker Tiger Palm fix reports **75 ahead / 1 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature HEAD before this progress commit is `e2490be8485ea540cf3f9ae271c050508ed0c0c2`.
+- [ ] Feature rebase onto `6f264eea...` remains pending. Current compare after this run's code/audit changes reports **77 ahead / 1 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; feature HEAD before this progress commit is `2dac31107560dbec3ae23933fffb753b4cd61e53`.
 - [x] Upstream #425 does not modify any Monk feature path; its ThreatManager/TankTarget changes remain compatible with Monk Provoke's repository-native `tank target` selection.
 - [x] No force update or invented rebase resolution was used.
 - [x] Fresh upstream Issue/PR overlap search found no dedicated Monk PlayerBot combat-AI implementation. Issue #413 is bot command management; issue #150 is Tushui Monk NPC scripting.
@@ -43,7 +43,8 @@
 - [x] `SpellIdValue` same-name unranked ordering can resolve the numerically lower ID; Monk Guard avoids depending on that ambiguity.
 - [x] Routine Fists of Fury retention is protected by generic channel checks: ordinary casts and `reach melee` do not replace a running channel; runtime is still required for global safety/formation movement.
 - [x] Non-combat `nc` is loaded for Monk through the universal non-combat strategy path. Because there is no separate Monk case in `AddDefaultNonCombatStrategies`, Mistweaver-specific out-of-combat behavior must be specialization-gated inside `GenericMonkNonCombatStrategy`.
-- [x] Target-core Monk enums identify Combo Breaker: Tiger Palm as aura `118864`. MoP-era spell data corroborates Tiger Power as aura `125359`; live build-18414 runtime verification remains pending.
+- [x] Target-core Monk enums identify Combo Breaker: Tiger Palm as aura `118864` and Combo Breaker: Blackout Kick as `116768`. MoP-era spell data corroborates Tiger Power as aura `125359`; live build-18414 runtime verification remains pending.
+- [x] Target-core `spell_monk_fortifying_brew` is an AuraScript on `120954`. This proves `120954` is an aura/effect ID, **not** that it is the learned player cast ID. The PlayerBot action remains spell-name resolved and does not hardcode `120954`; MoP-era data points to player cast `115203`, which remains pending target DBC/runtime proof.
 
 ## Implementation checklist
 
@@ -67,8 +68,9 @@
 - [x] Moderate/Heavy Stagger -> Purifying Brew behavior.
 - [x] Elusive Brew stack gating.
 - [x] Provoke uses repository-native `tank target` and avoids redundant taunt when target already attacks the bot.
-- [x] Fortifying Brew defensive trigger.
+- [x] Fortifying Brew defensive trigger remains name-resolved; no unproven aura/effect ID is hardcoded as the player cast.
 - [x] Guard explicitly prefers active `123402`, falls back to active `115295`, uses the resolved ID for power/cast checks/execution, and treats either Guard aura as active.
+- [ ] Runtime/DBC prove Fortifying Brew learned cast ID and resulting aura.
 - [ ] Runtime prove live Glyph of Guard spellbook override behavior and verify Guard with/without glyph.
 - [ ] Runtime tanking/taunt/Guard/rotation validation.
 
@@ -121,6 +123,14 @@
 - **Fix:** remove Tiger Palm from the Windwalker default list; add exact-aura triggers for missing Tiger Power (`125359`) and Combo Breaker: Tiger Palm (`118864`); register both triggers in `MonkAiObjectContext`; preserve Brewmaster behavior unchanged.
 - **Commits:** `a830ff938a5b40975a95a61fe45c2e56bdda081d`, `9d7c39f776b0d07a708d87d15dff009a8ee0af41`, `c241382116226ed641cc3bc7a38ee2afc43882a0`, `e2490be8485ea540cf3f9ae271c050508ed0c0c2`.
 - **Verification:** factory/key/API static audit complete. Exact Combo Breaker aura is present in target-core Monk enums; Tiger Power ID is corroborated by MoP-era spell data. Build and live cadence remain pending.
+
+### Corrected this run — Fortifying Brew `120954` was over-classified in the spell ledger
+
+- **Symptom:** `MONK_SPELL_AUDIT.md` previously listed `120954` as the confirmed active Fortifying Brew cast because the target-core comment says `// 120954 - Fortifying Brew`.
+- **Cause:** the referenced implementation is an `AuraScript`; the script establishes an aura/effect ID but does not establish the learned spellbook cast ID.
+- **Fix:** move `120954` to confirmed related/internal IDs, keep the PlayerBot action name-resolved, and record MoP-era `115203` only as corroboration pending target DBC/runtime proof.
+- **Commit:** `2dac31107560dbec3ae23933fffb753b4cd61e53`.
+- **Verification:** target-core script type audited; no source behavior change required because Monk code never hardcoded `120954` for casting.
 
 ### Fixed previously — Mistweaver non-combat healer/Detox gap
 
