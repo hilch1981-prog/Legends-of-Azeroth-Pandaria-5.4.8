@@ -130,12 +130,18 @@ class CastEnvelopingMistOnPartyAction : public HealPartyMemberAction
 {
 public:
     CastEnvelopingMistOnPartyAction(PlayerbotAI* botAI) : HealPartyMemberAction(botAI, "enveloping mist") {}
+    Unit* GetTarget() override;
+    bool isPossible() override;
+    bool isUseful() override;
 };
 
 class CastSurgingMistOnPartyAction : public HealPartyMemberAction
 {
 public:
     CastSurgingMistOnPartyAction(PlayerbotAI* botAI) : HealPartyMemberAction(botAI, "surging mist") {}
+    Unit* GetTarget() override;
+    bool isPossible() override;
+    bool isUseful() override;
 };
 
 class CastLifeCocoonOnPartyAction : public CastSpellAction
