@@ -67,6 +67,43 @@ bool CastProvokeAction::isUseful()
     return target && target->GetTarget() != bot->GetGUID() && CastSpellAction::isUseful();
 }
 
+Unit* CastRenewingMistOnPartyAction::GetTarget()
+{
+    Unit* priorityTarget = HealPartyMemberAction::GetTarget();
+    if (priorityTarget && !priorityTarget->GetAura(SPELL_MONK_RENEWING_MIST_HOT, bot->GetGUID()))
+        return priorityTarget;
+
+    Player* bestTarget = nullptr;
+    float bestHealth = 101.0f;
+    for (ObjectGuid const guid : AI_VALUE(GuidVector, "group members"))
+    {
+        Player* member = ObjectAccessor::FindPlayer(guid);
+        if (!member || !member->IsAlive() || !member->IsInWorld() || member->GetMapId() != bot->GetMapId())
+            continue;
+
+        if (member->GetAura(SPELL_MONK_RENEWING_MIST_HOT, bot->GetGUID()))
+            continue;
+
+        if (bot->GetDistance2d(member) >= sPlayerbotAIConfig->healDistance * 2 || !bot->IsWithinLOSInMap(member))
+            continue;
+
+        float health = member->GetHealthPct();
+        if (health < bestHealth)
+        {
+            bestHealth = health;
+            bestTarget = member;
+        }
+    }
+
+    return bestTarget ? bestTarget : priorityTarget;
+}
+
+bool CastRenewingMistOnPartyAction::isUseful()
+{
+    Unit* target = GetTarget();
+    return target && !target->GetAura(SPELL_MONK_RENEWING_MIST_HOT, bot->GetGUID()) && HealPartyMemberAction::isUseful();
+}
+
 Unit* CastEnvelopingMistOnPartyAction::GetTarget()
 {
     if (Unit* channelTarget = GetSoothingMistTarget(bot))
