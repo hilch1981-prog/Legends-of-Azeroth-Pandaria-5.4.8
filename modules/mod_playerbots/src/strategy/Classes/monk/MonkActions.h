@@ -125,6 +125,8 @@ class CastRenewingMistOnPartyAction : public HealPartyMemberAction
 {
 public:
     CastRenewingMistOnPartyAction(PlayerbotAI* botAI) : HealPartyMemberAction(botAI, "renewing mist") {}
+    Unit* GetTarget() override;
+    bool isUseful() override;
 };
 
 class CastEnvelopingMistOnPartyAction : public HealPartyMemberAction
