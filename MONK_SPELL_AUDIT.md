@@ -1,6 +1,6 @@
 # Monk PlayerBot Spell Audit — MoP 5.4.8
 
-This file is a development-time verification ledger for the Monk PlayerBot contribution. It records target-core evidence from `src/server/scripts/Spells/spell_monk.cpp` and later build/runtime evidence. Do not promote an enum helper/aura ID to an active player cast ID merely because it has a Monk symbol, and do not substitute IDs from another emulator or expansion.
+This file is a development-time verification ledger for the Monk PlayerBot contribution. It records target-core evidence from `src/server/scripts/Spells/spell_monk.cpp`, repository-local PlayerBot behavior, and later build/runtime evidence. Do not promote an enum helper/aura ID to an active player cast ID merely because it has a Monk symbol, and do not substitute IDs from another emulator or expansion.
 
 ## Active casts confirmed directly in the target core
 
@@ -23,25 +23,23 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Fists of Fury | 113656 | `// 113656 - Fists of Fury` and damage map | active cast confirmed |
 | Spear Hand Strike | 116705 | `// Spear Hand Strike - 116705`; target core applies a 15-second cooldown | active cast confirmed |
 | Touch of Karma | 122470 | `// 122470 - Touch of Karma` | active cast confirmed |
-| Provoke | 115546 | `// 115546 - Provoke`; cast script triggers the Provoke effect helper | active cast confirmed; PlayerBot aggro-target selection remains unverified |
-| Soothing Mist | 115175 | `// 115175 - Soothing Mist`; target core treats it as a channel aura | active cast confirmed |
-| Renewing Mist | 115151 | target-core `SPELL_MONK_RENEWING_MIST`; 119611 aura implementation explicitly calculates from 115151 | player cast confirmed by target-core linkage |
-| Surging Mist | 116694 | `// 116694 - Surging Mist`; casts instantly onto the current Soothing Mist channel target when channeling | active cast confirmed |
-| Enveloping Mist | 124682 | `// 124682 - Enveloping Mist`; targets the current Soothing Mist channel target when channeling | active cast confirmed |
-| Uplift | 116670 | `// 116670 - Uplift` target-core handling | active cast confirmed |
+| Provoke | 115546 | target-core Provoke cast script triggers the Provoke effect helper | active cast confirmed; static `tank target` selection implemented, runtime pending |
+| Soothing Mist | 115175 | target-core Soothing Mist channel implementation | active cast confirmed |
+| Renewing Mist | 115151 | `119611` aura explicitly calculates from player spell `115151` | player cast confirmed by target-core linkage |
+| Surging Mist | 116694 | target-core script casts instantly onto the current Soothing Mist channel target when channeling | active cast confirmed |
+| Enveloping Mist | 124682 | target-core script targets the current Soothing Mist channel target when channeling | active cast confirmed |
+| Uplift | 116670 | target-core Uplift target filter operates on caster-owned Renewing Mist | active cast confirmed |
 | Mana Tea | 115294 | `// 115294 - Mana Tea`; consumes Mana Tea stacks over channel ticks | active cast confirmed |
-| Life Cocoon | 116849 | `// 116849 - Life Cocoon` | active cast confirmed |
-| Revival | 115310 | `// 115310 - Revival`; target selector filters minor guardians from the raid-area heal | active cast confirmed |
-| Tigereye Brew | 116740 | `// 116740 - Tigereye Brew`; consumes up to 10 Tigereye Brew stack aura charges and scales the resulting buff | active cast confirmed |
-| Touch of Death | 115080 | `// 115080 - Touch of Death` with target validity rules | active cast confirmed |
+| Life Cocoon | 116849 | target-core Life Cocoon implementation | active cast confirmed |
+| Revival | 115310 | target-core Revival raid-area healing logic | active cast confirmed |
+| Tigereye Brew | 116740 | `// 116740 - Tigereye Brew`; consumes 10 Tigereye Brew stacks when present | active cast confirmed |
+| Touch of Death | 115080 | target-core Touch of Death validity logic | active cast confirmed |
 
 ## Confirmed related/internal IDs
 
-These IDs are real target-core Monk auras/effects/helpers, but they are not the active player cast ID for the corresponding button unless explicitly stated above.
-
 | Behavior | Target-core ID | Meaning |
 | --- | ---: | --- |
-| Provoke effect | 118635 | helper/effect cast by active Provoke 115546; **not** the primary PlayerBot cast ID |
+| Provoke effect | 118635 | helper/effect cast by active Provoke; not the primary PlayerBot cast ID |
 | Blackout Kick DoT | 128531 | secondary damage-over-time effect |
 | Blackout Kick heal | 128591 | secondary heal effect |
 | Shuffle | 115307 | Brewmaster defensive aura extended/applied by Blackout Kick |
@@ -50,78 +48,86 @@ These IDs are real target-core Monk auras/effects/helpers, but they are not the 
 | Keg Smash visual | 123662 | secondary visual/effect |
 | Keg Smash energize | 127796 | post-cast energize effect |
 | Weakened Blows | 115798 | Keg Smash-applied debuff |
-| Dizzying Haze | 116330 | Keg Smash-applied debuff; enables Breath of Fire DoT in target code |
+| Dizzying Haze | 116330 | Keg Smash-applied debuff; enables Breath of Fire DoT |
 | Stagger | 124255 | underlying stagger periodic-damage aura |
 | Light Stagger | 124275 | stagger severity marker |
 | Moderate Stagger | 124274 | stagger severity marker |
 | Heavy Stagger | 124273 | stagger severity marker |
 | Spear Hand Strike silence | 116709 | secondary silence effect |
+| Renewing Mist HoT | 119611 | caster-bound periodic heal used by jump logic and Uplift eligibility |
+| Renewing Mist jump | 119607 | jump selector excludes units already carrying the same caster's `119611` |
+| Uplift allowing cast | 123757 | caster-side helper maintained while bound Renewing Mist auras exist |
 | Surging Mist heal | 116995 | heal effect triggered by active Surging Mist 116694 |
 | Enveloping Mist heal | 132120 | heal effect triggered by active Enveloping Mist 124682 |
 | Mana Tea stacks | 115867 | stack aura consumed by Mana Tea |
 | Mana Tea driver | 115869 | hidden Chi-consumption driver |
-| Tigereye Brew stacks | 125195 | stack aura generated from Chi consumption and consumed by active Tigereye Brew 116740 |
-| Tigereye Brew +1 visual | 125196 | visual/effect emitted when a Tigereye Brew stack is generated |
-| Tigereye Brew full-stack visual | 137591 | visual controller threshold for accumulated Tigereye Brew stacks |
+| Tigereye Brew stacks | 125195 | stack aura generated from Chi consumption and consumed by active Tigereye Brew |
+| Tigereye Brew +1 visual | 125196 | visual/effect emitted when a stack is generated |
+| Tigereye Brew full-stack visual | 137591 | visual controller threshold |
 | Rising Sun Kick debuff | 130320 | debuff applied after active RSK hit |
 | Expel Harm damage | 115129 | damage effect generated from Expel Harm healing |
 | Touch of Karma redirected damage | 124280 | redirected-damage helper |
 | Stance of the Wise Serpent | 115070 | Mistweaver stance/aura |
+| Guard player variants | 123402 / 115295 | target-core Monk ability variants; exact learned-name resolution remains runtime/DBC gated |
+| Guard statue variants | 118604 / 136070 | Black Ox statue Guard effects, not PlayerBot player-cast choices |
 
 ## Target-core behavior confirmed for strategy design
 
 ### Brewmaster
 
-- Blackout Kick `100784` applies Shuffle `115307`, or extends an existing Shuffle duration.
-- Keg Smash `121253` applies Weakened Blows `115798` and Dizzying Haze `116330`, then triggers energize `127796` after the cast.
-- Breath of Fire `115181` gains its extra DoT only when Dizzying Haze is present on the target.
-- Stagger is represented by `124255` plus Light/Moderate/Heavy severity auras `124275/124274/124273`.
-- Purifying Brew `119582` removes the underlying Stagger and all three severity markers.
-- Elusive Brew `115308` derives its duration from accumulated stack aura `128939` and then removes those stacks.
-
-These facts justify explicit PlayerBot triggers for Shuffle maintenance and moderate/heavy Stagger purification rather than only generic health thresholds.
+- Blackout Kick `100784` applies or extends Shuffle `115307` for Brewmaster.
+- Keg Smash `121253` applies Weakened Blows `115798` and Dizzying Haze `116330`, then energizes through `127796`.
+- Breath of Fire `115181` gains its extra DoT only when Dizzying Haze is present.
+- Stagger is represented by `124255` plus Light/Moderate/Heavy markers `124275/124274/124273`.
+- Purifying Brew `119582` removes Stagger and all severity markers.
+- Elusive Brew `115308` derives duration from accumulated stack aura `128939` and removes those stacks.
+- Repository-local `ValueContext` provides `tank target`; current upstream `TankTargetValue` uses ThreatManager state to prioritize a tank target needing aggro. Monk Provoke now targets that value rather than generic `current target`.
 
 ### Mistweaver
 
 - Soothing Mist `115175` is a channel.
-- Surging Mist `116694` and Enveloping Mist `124682` detect an active Soothing Mist channel and redirect their heal to that channel target; their casts can become directly triggered while channeling.
-- Renewing Mist's 119611 periodic aura is linked to player spell `115151` and enables Uplift eligibility through target-core aura logic.
-- Mana Tea `115294` consumes `115867` stacks over periodic ticks; the target-core Mana Tea driver only generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
-- Revival `115310` is a raid-area spell and explicitly excludes minor guardians from its target list.
-
-These facts mean the final healer AI must become channel-aware rather than treating all Mistweaver heals as unrelated generic party heals.
+- Surging Mist `116694` and Enveloping Mist `124682` detect Soothing Mist, become directly castable, and redirect their effective heal to the current Soothing Mist channel target.
+- Renewing Mist player spell `115151` produces caster-bound HoT `119611`. On apply/tick the target core maintains Uplift-allowing helper `123757` on the caster.
+- Renewing Mist jump `119607` explicitly excludes units already carrying `119611` from the same caster, then prefers an injured eligible unit when one exists.
+- Uplift `116670` builds its heal target list only from units carrying caster-owned Renewing Mist. Thunder Focus Tea controls whether the refresh effect is applied; the Uplift heal target set remains the caster's Renewing Mist targets.
+- PlayerBot now mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
+- Mana Tea `115294` consumes `115867` stacks over periodic ticks; the Mana Tea driver generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
+- Revival `115310` is a raid-area heal and excludes minor guardians from its target list.
 
 ### Windwalker
 
-- Rising Sun Kick `107428` applies target debuff `130320`.
-- Fists of Fury `113656` is implemented as an aura/channel-style periodic damage ability in the target core.
-- The target core explicitly tracks Chi-consuming spells to generate Tigereye Brew stacks `125195` through the `123980` Brewing driver.
-- Active Tigereye Brew `116740` consumes up to 10 accumulated stacks and scales its resulting damage buff from the consumed stack aura.
-- The PlayerBot implementation now checks the exact stack aura ID `125195` and requests the active `tigereye brew` action at 10 stacks. It intentionally does not use the repository's generic `HasAuraStackTrigger`, because that helper forces `checkDuration=true` and the build-18414 DBC duration semantics for `125195` have not yet been verified.
+- Rising Sun Kick `107428` applies debuff `130320`.
+- Fists of Fury `113656` is an aura/channel-style periodic damage ability in the target core; its periodic damage amount comes from the Monk-specific damage calculation. Runtime movement/channel interruption behavior is still required before adding custom PlayerBot cancellation rules.
+- Chi-consuming spells feed the Tigereye Brew driver and generate stack aura `125195`.
+- Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
+- PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
 
-These facts confirm that Energy/Chi flow and a 10-stack Tigereye Brew consumption decision are now represented in the static strategy, while full runtime validation remains required.
+## PlayerBot name-resolution evidence
 
-## Still requiring direct target-core confirmation or runtime/DBC validation
+`SpellIdValue` searches only the bot's active learned, non-passive spells matching the requested spell name. That is desirable for Monk actions because PlayerBot does not need a hardcoded active ID when one unambiguous learned spell exists.
 
-The initial PlayerBot framework resolves actions by spell name, so an ID alone is not enough. The following still need one or more of: exact active ID, spell-name resolution, resource cost, stance/spec restriction, cooldown, target type/range, aura dependency, or channel/cast behavior.
+Guard remains deliberately unresolved: the target core binds the Guard script to two player-ability variants (`123402`, `115295`). If both expose the same name and are simultaneously active/learned, `SpellIdValue` selection behavior must be validated against the target DBC/player spellbook rather than guessed. Do not hardcode either variant solely to make the static implementation appear complete.
 
-- Guard — target core explicitly binds `spell_monk_guard` to `123402` and `115295` as Monk ability variants, while `118604/136070` are statue-proc Guard variants. The exact PlayerBot spell-name resolution between the two player variants remains DBC/runtime pending; do not hardcode one blindly.
-- Tigereye Brew — active cast `116740`, stack aura `125195`, and the static 10-stack decision are confirmed. Runtime still must prove that the PlayerBot `spell id` lookup for action name `tigereye brew` resolves the learned active player cast `116740` and that the exact stack aura is present as expected.
-- Provoke — active ID is confirmed as 115546, but the current generic PlayerBot action targets the current target rather than a repository-native lost-aggro target.
-- Life Cocoon — active ID is confirmed; correct emergency party target selection still needs runtime validation.
-- Soothing/Surging/Enveloping — active IDs and channel interaction are confirmed; PlayerBot engine behavior while a channel is active still needs build/runtime verification.
-- Fists of Fury — active ID is confirmed; movement/channel interruption safety still needs PlayerBot runtime validation.
+## Still requiring direct runtime/DBC validation
+
+- Guard — exact learned player variant/name resolution for `123402` vs `115295`.
+- Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195` as expected.
+- Provoke — static `tank target` path is implemented; verify actual multi-attacker threat selection and successful taunt in game.
+- Life Cocoon — verify emergency party target and range behavior.
+- Soothing/Surging/Enveloping — static channel exception is implemented; verify compile and live channel behavior.
+- Renewing Mist/Uplift — static caster-owned HoT logic is implemented; verify target spread, Chi use, range, and cadence in a live group.
+- Fists of Fury — active ID and channel-style core behavior are confirmed; verify movement/channel interruption and Energy/Chi rotation interaction in PlayerBot runtime.
 
 ## Source inconsistency noted
 
-One Storm/Earth/Fire proc switch contains a comment labelling spell ID `100780` as `TigerPalm`, while the target core's dedicated Monk damage map and Power Strikes handling identify `100780` as Jab and `100787` as Tiger Palm. For this audit, the dedicated damage map is treated as the stronger local evidence. Do not encode the conflicting comment as a spell-ID mapping.
+One Storm/Earth/Fire proc switch labels `100780` as `TigerPalm`, while the dedicated Monk damage map and Power Strikes handling identify `100780` as Jab and `100787` as Tiger Palm. The dedicated damage map is treated as stronger local evidence. Do not encode the conflicting comment as a spell-ID mapping.
 
 ## Validation rule
 
 A spell mapping or behavioral assumption is marked verified only with one of these forms of evidence:
 
-1. an explicit target-core spell script/comment plus matching implementation use;
-2. target-core DBC-backed spell lookup/resource data; or
-3. a successful `PLAYERBOTS=1` build followed by target 5.4.8 runtime lookup/cast evidence.
+1. explicit target-core spell script/comment plus matching implementation use;
+2. target-core DBC-backed learned spell/resource data; or
+3. successful `PLAYERBOTS=1` build followed by target 5.4.8 runtime lookup/cast evidence.
 
-Do not infer a verified MoP 5.4.8 ID solely from a modern WoW database, an external wiki, or another emulator branch.
+Do not infer a verified MoP 5.4.8 mapping solely from a modern WoW database, external wiki, or another emulator branch.
