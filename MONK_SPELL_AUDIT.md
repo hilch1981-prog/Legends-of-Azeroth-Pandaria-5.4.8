@@ -97,15 +97,16 @@ These facts mean the final healer AI must become channel-aware rather than treat
 - Fists of Fury `113656` is implemented as an aura/channel-style periodic damage ability in the target core.
 - The target core explicitly tracks Chi-consuming spells to generate Tigereye Brew stacks `125195` through the `123980` Brewing driver.
 - Active Tigereye Brew `116740` consumes up to 10 accumulated stacks and scales its resulting damage buff from the consumed stack aura.
+- The PlayerBot implementation now checks the exact stack aura ID `125195` and requests the active `tigereye brew` action at 10 stacks. It intentionally does not use the repository's generic `HasAuraStackTrigger`, because that helper forces `checkDuration=true` and the build-18414 DBC duration semantics for `125195` have not yet been verified.
 
-These facts confirm that Energy/Chi flow and a 10-stack Tigereye Brew consumption decision need explicit PlayerBot validation before the Windwalker priority list is considered complete.
+These facts confirm that Energy/Chi flow and a 10-stack Tigereye Brew consumption decision are now represented in the static strategy, while full runtime validation remains required.
 
 ## Still requiring direct target-core confirmation or runtime/DBC validation
 
 The initial PlayerBot framework resolves actions by spell name, so an ID alone is not enough. The following still need one or more of: exact active ID, spell-name resolution, resource cost, stance/spec restriction, cooldown, target type/range, aura dependency, or channel/cast behavior.
 
 - Guard — target core explicitly binds `spell_monk_guard` to `123402` and `115295` as Monk ability variants, while `118604/136070` are statue-proc Guard variants. The exact PlayerBot spell-name resolution between the two player variants remains DBC/runtime pending; do not hardcode one blindly.
-- Tigereye Brew — active cast `116740` and stack aura `125195` are confirmed. The repository provides `HasAuraStackTrigger`, but PlayerBot name resolution must be checked before using a name-based 10-stack trigger because active and stack auras may share the same display name.
+- Tigereye Brew — active cast `116740`, stack aura `125195`, and the static 10-stack decision are confirmed. Runtime still must prove that the PlayerBot `spell id` lookup for action name `tigereye brew` resolves the learned active player cast `116740` and that the exact stack aura is present as expected.
 - Provoke — active ID is confirmed as 115546, but the current generic PlayerBot action targets the current target rather than a repository-native lost-aggro target.
 - Life Cocoon — active ID is confirmed; correct emergency party target selection still needs runtime validation.
 - Soothing/Surging/Enveloping — active IDs and channel interaction are confirmed; PlayerBot engine behavior while a channel is active still needs build/runtime verification.
