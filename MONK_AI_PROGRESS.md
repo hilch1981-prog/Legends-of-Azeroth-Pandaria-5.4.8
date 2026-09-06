@@ -13,7 +13,7 @@
 - [x] Upstream, fork `master`, and feature branch checked at the start of this run and upstream re-checked before handoff.
 - [x] Upstream `master`: `06fb98107158ee5a513e673a42674693fb4db7a2` (`Mordenize Combat System part 1 (#426)`).
 - [x] Fork `master`: same `06fb98107158ee5a513e673a42674693fb4db7a2`.
-- [ ] Direct compare immediately before this progress-only commit: feature **96 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`. This progress commit itself adds one additional ahead-only documentation commit.
+- [ ] Direct compare during this run: feature **97 ahead / 2 behind**, merge base `3ec151e16c7912b217838040ac1bb30c6f1fc84d`; this documentation update may add one further ahead-only commit.
 - [ ] Rebase remains pending because the local execution environment cannot resolve/reach `github.com`; no force update or invented rebase was attempted.
 - [x] Upstream #426 audited: it changes generic combat/threat APIs, but Monk Provoke uses repository-native `tank target` and does not directly call the renamed ThreatManager getter.
 - [x] Fresh upstream Issue/PR searches found no materially overlapping Monk PlayerBot combat-AI implementation. Historical Monk PRs #363/#168/#268 and issues #413/#150 remain unrelated to this workstream.
@@ -22,11 +22,12 @@
 
 - [ ] Local Git/rebase and local compile remain blocked by environment connectivity (`Could not resolve host: github.com`; direct outbound connectivity also unavailable).
 - [x] GitHub connector reads/writes are healthy.
-- [x] Fork PR #1 remains validation-only and is **not** the upstream contribution PR. Current GitHub mergeability signal is clean/mergeable; it is not a compile result.
+- [x] Fork PR #1 remains validation-only and is **not** the upstream contribution PR. GitHub mergeability has fluctuated while head/base moved, so it is not treated as a compile or conflict gate.
 - [ ] Feature branch has zero GitHub Actions runs.
 - [x] Repository default GCC workflow is **not** a valid PlayerBot build gate: it omits `-DPLAYERBOTS=1`, while `modules/CMakeLists.txt` removes `mod_playerbots` when `PLAYERBOTS` is false.
 - [x] Fork-only branch `ci/monk-ai-playerbots` was created from feature source. Validation commit `0c51fa9c3ecb7e3ae97f419296217bd208175096` changes only `.github/workflows/linux_gcc.yml` to add `-DPLAYERBOTS=1`; this change is intentionally absent from the feature branch/upstream contribution diff.
-- [ ] `ci/monk-ai-playerbots` still has zero workflow runs/status contexts, so no CI PASS/FAIL is inferred.
+- [x] Fork-local PR #2 (`ci/monk-ai-playerbots` -> `master`) was opened this run specifically to exercise the workflow's `pull_request: opened` trigger. It is build-validation-only, is **not** the upstream implementation PR, and must not be merged.
+- [ ] PR #2 / `ci/monk-ai-playerbots` still has zero workflow runs/status contexts after the PR-open event. The fork also reports zero Actions runs repository-wide, so no CI PASS/FAIL is inferred.
 
 ## Architecture / implementation state
 
@@ -36,6 +37,9 @@
 - [x] `MonkAiObjectContext` Strategy/Trigger/Action factories implemented and keys statically cross-checked.
 - [x] Generic combat, non-combat, AoE, and cure strategies implemented.
 - [x] Monk-local DBC-derived Mana/Energy/Chi preflight implemented for resource-sensitive actions; global PlayerBot behavior unchanged.
+- [x] Current upstream `SpellInfo.h` revalidates the exact APIs used by that preflight: `GetPowerType(Unit const*, int32*)` and `CalcPowerCost(Unit const*, SpellSchoolMask, int32)`.
+- [x] Current generic action code revalidates target semantics: `CastHealingSpellAction` targets self (appropriate for Revival/Uplift), while party heals use `HealPartyMemberAction`/explicit target overrides.
+- [x] Current generic `CastSpellAction::Execute` calls `PlayerbotAI::CastSpell` directly, so the narrow Surging/Enveloping-during-Soothing `isPossible()` exception is not immediately re-run through the generic channel rejection before execution; final legality still remains in the core cast path.
 - [x] `RandomPlayerbotFactory.cpp` remains untouched because no concrete defect requires modification.
 - [x] Module source discovery is recursive; no per-file CMake registration is required for the new Monk files.
 - [ ] `MonkAiObjectContext` construction in `Factory/AiFactory.cpp` remains intentionally disabled until a real pre-activation `PLAYERBOTS=1` build passes.
@@ -110,12 +114,19 @@
 
 ## Exact blocker
 
-The current blocker is **build/runtime execution availability**, not a known source compiler error. The local runtime cannot reach GitHub to obtain/rebase the full tree, and fork GitHub Actions has produced no run even for the isolated branch whose workflow explicitly sets `-DPLAYERBOTS=1`. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent.
+The current blocker is **build/runtime execution availability**, not a known source compiler error. The local runtime cannot reach GitHub to obtain/rebase the full tree. The fork reports zero Actions runs repository-wide, and opening fork-local PR #2 against the isolated `ci/monk-ai-playerbots` branch did not produce a run even though that workflow explicitly listens for `pull_request: opened` and configures `-DPLAYERBOTS=1`. The default GCC workflow cannot be substituted because it excludes `mod_playerbots` when the flag is absent. No absent workflow is being reported as a PASS or FAIL.
+
+## External coordination
+
+- No dedicated overlapping upstream Monk PlayerBot combat-AI issue/PR found this run.
+- Fork PR #1 is mergeability/diff validation only.
+- Fork PR #2 and branch `ci/monk-ai-playerbots` are PlayerBot-build validation artifacts only; they are not upstream contribution artifacts and must not be merged.
+- No upstream implementation issue/PR will be opened before the build gate.
 
 ## Next deterministic action
 
 1. Re-check upstream/fork/feature SHAs and upstream Monk AI Issue/PR overlap.
-2. Re-check `ci/monk-ai-playerbots` commit `0c51fa9c...` for an Actions run/status; if a real `PLAYERBOTS=1` run appears, inspect every compile/link failure and fix Monk failures immediately.
+2. Re-check fork PR #2 / `ci/monk-ai-playerbots` for an Actions run/status; if a real `PLAYERBOTS=1` run appears, inspect every compile/link failure and fix Monk failures immediately.
 3. Retry local Git network once. If restored, rebase cleanly onto current upstream/fork `master`; stop the rebase and record exact paths for any ambiguous conflict rather than overwriting upstream work.
 4. Run the real pre-activation build with `-DPLAYERBOTS=1`.
 5. After it passes, enable Monk `AiObjectContext` construction in `AiFactory.cpp` and rebuild with `PLAYERBOTS=1`.
