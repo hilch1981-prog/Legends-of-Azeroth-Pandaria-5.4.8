@@ -12,7 +12,6 @@ void GenericMonkStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode("low health", NextAction::array(0, new NextAction("expel harm", ACTION_HIGH + 3), nullptr)));
     triggers.push_back(new TriggerNode("critical health", NextAction::array(0, new NextAction("fortifying brew", ACTION_INTERRUPT), nullptr)));
     triggers.push_back(new TriggerNode("spear hand strike", NextAction::array(0, new NextAction("spear hand strike", ACTION_INTERRUPT), nullptr)));
-    triggers.push_back(new TriggerNode("touch of death", NextAction::array(0, new NextAction("touch of death", ACTION_HIGH + 8), nullptr)));
 }
 
 MonkAoeStrategy::MonkAoeStrategy(PlayerbotAI* botAI) : CombatStrategy(botAI) {}
