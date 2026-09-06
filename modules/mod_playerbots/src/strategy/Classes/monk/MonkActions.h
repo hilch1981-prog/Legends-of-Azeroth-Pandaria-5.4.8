@@ -100,6 +100,14 @@ public:
     bool isPossible() override;
 };
 
+class CastDetoxMagicOnPartyAction : public CurePartyMemberAction
+{
+public:
+    CastDetoxMagicOnPartyAction(PlayerbotAI* botAI) : CurePartyMemberAction(botAI, "detox", DISPEL_MAGIC) {}
+    std::string const getName() override { return "detox magic on party"; }
+    bool isPossible() override;
+};
+
 class CastKegSmashAction : public CastMeleeSpellAction
 {
 public:
