@@ -64,8 +64,10 @@ public:
         creators["tigereye brew ready"] = &MonkTriggerFactoryInternal::tigereye_brew_ready;
         creators["cure poison"] = &MonkTriggerFactoryInternal::cure_poison;
         creators["cure disease"] = &MonkTriggerFactoryInternal::cure_disease;
+        creators["cure magic"] = &MonkTriggerFactoryInternal::cure_magic;
         creators["cure poison on party"] = &MonkTriggerFactoryInternal::cure_poison_on_party;
         creators["cure disease on party"] = &MonkTriggerFactoryInternal::cure_disease_on_party;
+        creators["cure magic on party"] = &MonkTriggerFactoryInternal::cure_magic_on_party;
     }
 
 private:
@@ -83,8 +85,10 @@ private:
     static Trigger* tigereye_brew_ready(PlayerbotAI* botAI) { return new TigereyeBrewReadyTrigger(botAI); }
     static Trigger* cure_poison(PlayerbotAI* botAI) { return new MonkCurePoisonTrigger(botAI); }
     static Trigger* cure_disease(PlayerbotAI* botAI) { return new MonkCureDiseaseTrigger(botAI); }
+    static Trigger* cure_magic(PlayerbotAI* botAI) { return new MonkCureMagicTrigger(botAI); }
     static Trigger* cure_poison_on_party(PlayerbotAI* botAI) { return new MonkCurePoisonOnPartyTrigger(botAI); }
     static Trigger* cure_disease_on_party(PlayerbotAI* botAI) { return new MonkCureDiseaseOnPartyTrigger(botAI); }
+    static Trigger* cure_magic_on_party(PlayerbotAI* botAI) { return new MonkCureMagicOnPartyTrigger(botAI); }
 };
 
 class MonkAiObjectContextInternal : public NamedObjectContext<Action>
@@ -106,6 +110,7 @@ public:
         creators["detox"] = &MonkAiObjectContextInternal::detox;
         creators["detox poison on party"] = &MonkAiObjectContextInternal::detox_poison_on_party;
         creators["detox disease on party"] = &MonkAiObjectContextInternal::detox_disease_on_party;
+        creators["detox magic on party"] = &MonkAiObjectContextInternal::detox_magic_on_party;
         creators["keg smash"] = &MonkAiObjectContextInternal::keg_smash;
         creators["guard"] = &MonkAiObjectContextInternal::guard;
         creators["elusive brew"] = &MonkAiObjectContextInternal::elusive_brew;
@@ -141,6 +146,7 @@ private:
     static Action* detox(PlayerbotAI* botAI) { return new CastDetoxAction(botAI); }
     static Action* detox_poison_on_party(PlayerbotAI* botAI) { return new CastDetoxPoisonOnPartyAction(botAI); }
     static Action* detox_disease_on_party(PlayerbotAI* botAI) { return new CastDetoxDiseaseOnPartyAction(botAI); }
+    static Action* detox_magic_on_party(PlayerbotAI* botAI) { return new CastDetoxMagicOnPartyAction(botAI); }
     static Action* keg_smash(PlayerbotAI* botAI) { return new CastKegSmashAction(botAI); }
     static Action* guard(PlayerbotAI* botAI) { return new CastGuardAction(botAI); }
     static Action* elusive_brew(PlayerbotAI* botAI) { return new CastElusiveBrewAction(botAI); }
