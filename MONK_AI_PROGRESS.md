@@ -28,6 +28,7 @@
 - [x] `Factory/RandomPlayerbotFactory.cpp` already contains Monk/Pandaren race-pool handling; no concrete defect requiring a change was found, so it remains untouched.
 - [x] Existing Warrior/Shaman/Druid/Paladin implementations were audited for AiObjectContext, strategy, action, trigger, role, cure, healing, AoE, and tank patterns.
 - [x] `Strategy.h` confirms the action priorities used by this implementation, including `ACTION_INTERRUPT`, `ACTION_DISPEL`, and `ACTION_EMERGENCY`.
+- [x] `GenericSpellActions.h`, `GenericTriggers.h`, and `CureTriggers.h` signatures were checked against the initial Monk action/trigger wrappers.
 
 ### Implementation checklist
 
@@ -44,7 +45,7 @@
 - [x] Verify existing Monk specialization/role/name pipeline; no modification currently justified.
 - [ ] Enable `MonkAiObjectContext` include and `CLASS_MONK` creation path in `Factory/AiFactory.cpp` after the new source set passes the next static/build gate.
 - [x] Verify `Factory/RandomPlayerbotFactory.cpp` requires no change for this task based on current evidence.
-- [ ] Validate every used spell name/ID/effect/range/resource/aura/cooldown against MoP 5.4.8 build 18414.
+- [ ] Validate every used spell name/ID/effect/range/resource/aura/cooldown against MoP 5.4.8 build 18414 — target-core audit started in `MONK_SPELL_AUDIT.md`; several active IDs and internal effects are confirmed, but unresolved cast/resource semantics remain.
 - [ ] Configure/build successfully with `PLAYERBOTS=1`.
 - [ ] Resolve all Monk-related compiler/linker failures introduced by this branch.
 - [ ] In-game: Monk bot can be created/logged in and join/follow a party.
@@ -62,6 +63,10 @@
   - Adds 16 files under `modules/mod_playerbots/src/strategy/Classes/monk/`.
   - Adds `MonkAiObjectContext`, generic combat/non-combat strategies, action/trigger factories, and initial Brewmaster/Mistweaver/Windwalker strategy baselines.
   - Does **not** enable the `AiFactory.cpp` `CLASS_MONK` creation path yet.
+- `3ed310cf5a0524a15c5a8ca8e18f101815b8d99a` — `docs(playerbots): add Monk spell validation audit`
+  - Adds `MONK_SPELL_AUDIT.md` using the target core's `src/server/scripts/Spells/spell_monk.cpp` as the primary evidence source.
+  - Confirms active target-core IDs including Blackout Kick `100784`, Fortifying Brew `120954`, Provoke `118635`, Soothing Mist `115175`, Elusive Brew `115308`, Spinning Crane Kick `101546`, Renewing Mist `115151`, Mana Tea regeneration `115294`, Uplift `116670`, and Touch of Death `115080`.
+  - Separates secondary/internal aura/effect IDs from still-unresolved active cast IDs so donor/modern IDs are not accidentally treated as verified 5.4.8 data.
 
 ## Bugs / Issues discovered
 
@@ -73,6 +78,7 @@
 - **Resolution:** pending retry in a later run/environment.
 - **Fix commit:** N/A.
 - **Verification:** repository-side static architecture audit continued; actual compiler/linker verification is still required.
+- **CI note:** the fork currently reports no Actions runs for `feature/monk-ai-object-context` despite a push-triggered GCC workflow being present, so GitHub CI did not provide a substitute compile in this run.
 
 ### Runtime semantics still intentionally unverified
 
@@ -96,8 +102,10 @@ If overlap appears later, record the PR/issue number, overlapping paths/features
 - Healing/cure structural reference: `modules/mod_playerbots/src/strategy/Classes/shaman/` and `paladin/`
 - Context integration: `modules/mod_playerbots/src/Factory/AiFactory.cpp`
 - Specialization helpers: `modules/mod_playerbots/src/AI/PlayerbotSpec.cpp`
+- Target-core Monk spell implementation: `src/server/scripts/Spells/spell_monk.cpp`
+- Spell verification ledger: `MONK_SPELL_AUDIT.md`
 - External behavioral reference only: DigiD702/mod-playerbots Monk rotation/healer logic. Do not copy implementation verbatim; translate only verified behavior into this repository's Strategy / Trigger / Action architecture.
 
 ## Next action
 
-Perform a static compile-safety audit of the newly committed Monk source set, then retry a real `PLAYERBOTS=1` build as soon as the execution environment can clone/build the repository. Fix compile/link errors first. After the source set passes that gate, enable the `MonkAiObjectContext` include and `CLASS_MONK` case in `Factory/AiFactory.cpp` in a separate commit. Then validate the MoP 5.4.8 spell IDs/resources/target semantics and refine Brewmaster, Mistweaver, and Windwalker priorities before any upstream issue/PR is opened.
+Retry a real `PLAYERBOTS=1` build as soon as an execution/CI environment can run it, while continuing target-core spell/semantic validation from `MONK_SPELL_AUDIT.md`. Fix compiler/linker issues first. After the new Monk source set passes that gate, enable the `MonkAiObjectContext` include and `CLASS_MONK` case in `Factory/AiFactory.cpp` in a separate commit. Then refine Brewmaster Stagger/Shuffle/Guard/taunt behavior, Mistweaver channel/Chi/Mana Tea/heal targeting, and Windwalker Energy/Chi/cooldown priorities before any upstream issue/PR is opened.
