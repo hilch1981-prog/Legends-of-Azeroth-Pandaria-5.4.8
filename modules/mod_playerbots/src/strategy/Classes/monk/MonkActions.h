@@ -104,6 +104,7 @@ class CastProvokeAction : public CastSpellAction
 {
 public:
     CastProvokeAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "provoke") {}
+    std::string const GetTargetName() override { return "tank target"; }
     bool isUseful() override;
 };
 
@@ -163,6 +164,7 @@ class CastUpliftAction : public CastHealingSpellAction
 {
 public:
     CastUpliftAction(PlayerbotAI* botAI) : CastHealingSpellAction(botAI, "uplift") {}
+    bool isUseful() override;
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
 
