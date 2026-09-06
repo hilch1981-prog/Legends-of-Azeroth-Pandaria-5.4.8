@@ -10,7 +10,9 @@ constexpr uint32 SPELL_MONK_SOOTHING_MIST = 115175;
 constexpr uint32 SPELL_MONK_GUARD = 115295;
 constexpr uint32 SPELL_MONK_GUARD_GLYPH_OVERRIDE = 123402;
 constexpr uint32 SPELL_MONK_ELUSIVE_BREW_STACKS = 128939;
+constexpr uint32 SPELL_MONK_MANA_TEA = 115294;
 constexpr uint32 SPELL_MONK_MANA_TEA_STACKS = 115867;
+constexpr uint32 SPELL_MONK_MANA_TEA_GLYPH_OVERRIDE = 123761;
 constexpr uint32 SPELL_MONK_RENEWING_MIST_HOT = 119611;
 constexpr uint32 SPELL_MONK_COMBO_BREAKER_TIGER_PALM = 118864;
 constexpr uint32 SPELL_MONK_COMBO_BREAKER_BLACKOUT_KICK = 116768;
@@ -57,6 +59,20 @@ uint32 GetGuardSpellId(Player* bot)
 bool HasGuardAura(Player* bot)
 {
     return bot->HasAura(SPELL_MONK_GUARD) || bot->HasAura(SPELL_MONK_GUARD_GLYPH_OVERRIDE);
+}
+
+uint32 GetManaTeaSpellId(Player* bot)
+{
+    // The target core has both the normal 115294 Mana Tea channel and the
+    // 123761 glyphed instant variant. Prefer an active spellbook override when
+    // present instead of relying on ambiguous same-name spell resolution.
+    if (bot->HasActiveSpell(SPELL_MONK_MANA_TEA_GLYPH_OVERRIDE))
+        return SPELL_MONK_MANA_TEA_GLYPH_OVERRIDE;
+
+    if (bot->HasActiveSpell(SPELL_MONK_MANA_TEA))
+        return SPELL_MONK_MANA_TEA;
+
+    return 0;
 }
 
 Unit* GetSoothingMistTarget(Player* bot)
@@ -345,10 +361,34 @@ bool CastUpliftAction::isUseful()
     return false;
 }
 
+bool CastManaTeaAction::Execute([[maybe_unused]] Event event)
+{
+    uint32 spellId = GetManaTeaSpellId(bot);
+    return spellId && botAI->CastSpell(spellId, bot);
+}
+
+bool CastManaTeaAction::isPossible()
+{
+    if (botAI->IsInVehicle() && !botAI->IsInVehicle(false, false, true))
+        return false;
+
+    uint32 spellId = GetManaTeaSpellId(bot);
+    return spellId && botAI->CanCastSpell(spellId, bot);
+}
+
 bool CastManaTeaAction::isUseful()
 {
-    auto* stacks = bot->GetAura(SPELL_MONK_MANA_TEA_STACKS);
-    return stacks && stacks->GetStackAmount() >= 2 && CastBuffSpellAction::isUseful();
+    uint32 spellId = GetManaTeaSpellId(bot);
+    Aura* stacks = bot->GetAura(SPELL_MONK_MANA_TEA_STACKS);
+    if (!spellId || !stacks)
+        return false;
+
+    // Normal Mana Tea consumes one stack on channel application and then one per
+    // periodic tick. The glyphed 123761 variant has a target-core CheckCast gate
+    // requiring at least two stacks, so do not impose that two-stack minimum on
+    // the normal 115294 channel.
+    uint8 requiredStacks = spellId == SPELL_MONK_MANA_TEA_GLYPH_OVERRIDE ? 2 : 1;
+    return stacks->GetStackAmount() >= requiredStacks;
 }
 
 bool CastRisingSunKickAction::isPossible()

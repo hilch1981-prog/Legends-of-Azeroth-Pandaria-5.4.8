@@ -220,6 +220,8 @@ class CastManaTeaAction : public CastBuffSpellAction
 {
 public:
     CastManaTeaAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "mana tea") {}
+    bool Execute(Event event) override;
+    bool isPossible() override;
     bool isUseful() override;
 };
 
