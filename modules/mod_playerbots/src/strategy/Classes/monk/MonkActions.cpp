@@ -11,6 +11,21 @@ constexpr uint32 SPELL_MONK_ELUSIVE_BREW_STACKS = 128939;
 constexpr uint32 SPELL_MONK_MANA_TEA_STACKS = 115867;
 constexpr uint32 SPELL_MONK_RENEWING_MIST_HOT = 119611;
 
+bool HasPowerForSpell(Player* bot, uint32 spellId)
+{
+    if (!spellId)
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+        return false;
+
+    int32 powerEntryIndex = -1;
+    Powers powerType = spellInfo->GetPowerType(bot, &powerEntryIndex);
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask(), powerEntryIndex);
+    return powerCost <= 0 || bot->GetPower(powerType) >= powerCost;
+}
+
 Unit* GetSoothingMistTarget(Player* bot)
 {
     Spell* channel = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
@@ -32,13 +47,7 @@ bool CanCastMistHealWhileSoothing(PlayerbotAI* botAI, Player* bot, uint32 spellI
         return false;
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!spellInfo)
-        return false;
-
-    int32 powerEntryIndex = -1;
-    Powers powerType = spellInfo->GetPowerType(bot, &powerEntryIndex);
-    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask(), powerEntryIndex);
-    if (powerCost > 0 && bot->GetPower(powerType) < powerCost)
+    if (!spellInfo || !HasPowerForSpell(bot, spellId))
         return false;
 
     if (target->IsImmunedToSpell(spellInfo, spellInfo->GetAllEffectsMechanicMask()))
@@ -55,16 +64,56 @@ bool CanCastMistHealWhileSoothing(PlayerbotAI* botAI, Player* bot, uint32 spellI
 }
 }
 
+bool CastJabAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastTigerPalmAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastBlackoutKickAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastSpinningCraneKickAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastExpelHarmAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastHealingSpellAction::isPossible();
+}
+
+bool CastKegSmashAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
 bool CastElusiveBrewAction::isUseful()
 {
     auto* stacks = bot->GetAura(SPELL_MONK_ELUSIVE_BREW_STACKS);
     return stacks && stacks->GetStackAmount() >= 5 && CastBuffSpellAction::isUseful();
 }
 
+bool CastPurifyingBrewAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastSpellAction::isPossible();
+}
+
 bool CastProvokeAction::isUseful()
 {
     Unit* target = GetTarget();
     return target && target->GetTarget() != bot->GetGUID() && CastSpellAction::isUseful();
+}
+
+bool CastBreathOfFireAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
 }
 
 Unit* CastRenewingMistOnPartyAction::GetTarget()
@@ -114,10 +163,10 @@ Unit* CastEnvelopingMistOnPartyAction::GetTarget()
 
 bool CastEnvelopingMistOnPartyAction::isPossible()
 {
-    if (!GetSoothingMistTarget(bot))
-        return HealPartyMemberAction::isPossible();
-
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
+    if (!GetSoothingMistTarget(bot))
+        return HasPowerForSpell(bot, spellId) && HealPartyMemberAction::isPossible();
+
     return CanCastMistHealWhileSoothing(botAI, bot, spellId, GetTarget());
 }
 
@@ -143,10 +192,10 @@ Unit* CastSurgingMistOnPartyAction::GetTarget()
 
 bool CastSurgingMistOnPartyAction::isPossible()
 {
-    if (!GetSoothingMistTarget(bot))
-        return HealPartyMemberAction::isPossible();
-
     uint32 spellId = AI_VALUE2(uint32, "spell id", spell);
+    if (!GetSoothingMistTarget(bot))
+        return HasPowerForSpell(bot, spellId) && HealPartyMemberAction::isPossible();
+
     return CanCastMistHealWhileSoothing(botAI, bot, spellId, GetTarget());
 }
 
@@ -191,4 +240,14 @@ bool CastManaTeaAction::isUseful()
 {
     auto* stacks = bot->GetAura(SPELL_MONK_MANA_TEA_STACKS);
     return stacks && stacks->GetStackAmount() >= 2 && CastBuffSpellAction::isUseful();
+}
+
+bool CastRisingSunKickAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastFistsOfFuryAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
 }
