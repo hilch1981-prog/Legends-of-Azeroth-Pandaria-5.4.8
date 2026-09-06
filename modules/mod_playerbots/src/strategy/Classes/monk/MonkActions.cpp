@@ -14,6 +14,12 @@ bool CastElusiveBrewAction::isUseful()
     return stacks && stacks->GetStackAmount() >= 5 && CastBuffSpellAction::isUseful();
 }
 
+bool CastProvokeAction::isUseful()
+{
+    Unit* target = AI_VALUE(Unit*, "current target");
+    return target && target->GetTarget() != bot->GetGUID() && CastSpellAction::isUseful();
+}
+
 bool CastManaTeaAction::isUseful()
 {
     Aura* stacks = bot->GetAura(SPELL_MONK_MANA_TEA_STACKS);
