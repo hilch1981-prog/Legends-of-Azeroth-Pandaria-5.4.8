@@ -16,7 +16,6 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Expel Harm | 115072 | `// 115072 - Expel Harm` and damage map | active cast confirmed |
 | Detox | 115450 | `// 115450 - Detox`; magic effect is prevented unless caster has Internal Medicine `115451` | active cast confirmed |
 | Purifying Brew | 119582 | `// 119582 - Purifying Brew`; removes Stagger/Light/Moderate/Heavy Stagger | active cast confirmed |
-| Fortifying Brew | 120954 | `// 120954 - Fortifying Brew` | active cast/aura confirmed in target core; runtime spellbook resolution still follows the normal name path |
 | Elusive Brew | 115308 | `// 115308 - Elusive Brew`; duration consumes Elusive Brew stack aura | active cast confirmed |
 | Spinning Crane Kick | 101546 | `// 101546 - Spinning Crane Kick` aura implementation | active cast confirmed |
 | Rising Sun Kick | 107428 | `// 107428 - Rising Sun Kick`; applies debuff 130320 | active cast confirmed |
@@ -45,6 +44,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Shuffle | 115307 | Brewmaster defensive aura extended/applied by Blackout Kick |
 | Breath of Fire DoT | 123725 | conditional secondary DoT |
 | Elusive Brew stacks | 128939 | stack aura consumed by active Elusive Brew |
+| Fortifying Brew aura/script | 120954 | target-core `AuraScript` ID; this is **not** sufficient evidence that `120954` is the learned player cast ID |
 | Keg Smash visual | 123662 | secondary visual/effect |
 | Keg Smash energize | 127796 | post-cast energize effect |
 | Weakened Blows | 115798 | Keg Smash-applied debuff |
@@ -65,6 +65,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Tigereye Brew stacks | 125195 | stack aura generated from Chi consumption and consumed by active Tigereye Brew |
 | Tigereye Brew +1 visual | 125196 | visual/effect emitted when a stack is generated |
 | Tigereye Brew full-stack visual | 137591 | visual controller threshold |
+| Combo Breaker: Tiger Palm | 118864 | target-core proc aura emitted by `spell_monk_combo_breaker` |
+| Combo Breaker: Blackout Kick | 116768 | target-core proc aura emitted by `spell_monk_combo_breaker` |
 | Rising Sun Kick debuff | 130320 | debuff applied after active RSK hit |
 | Expel Harm damage | 115129 | damage effect generated from Expel Harm healing |
 | Touch of Karma redirected damage | 124280 | redirected-damage helper |
@@ -83,6 +85,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Stagger is represented by `124255` plus Light/Moderate/Heavy markers `124275/124274/124273`.
 - Purifying Brew `119582` removes Stagger and all severity markers.
 - Elusive Brew `115308` derives duration from accumulated stack aura `128939` and removes those stacks.
+- Target-core `spell_monk_fortifying_brew` is an AuraScript registered on `120954`; that proves `120954` is an effect/aura in this core, not that it is the learned cast. PlayerBot deliberately continues to resolve `"fortifying brew"` from the live spellbook rather than hardcoding this aura ID. MoP-era data commonly identifies player cast `115203`; target DBC/runtime must settle that mapping before it is marked confirmed.
 - Repository-local `ValueContext` provides `tank target`; current upstream `TankTargetValue` uses ThreatManager state to prioritize a tank target needing aggro. Monk Provoke targets that value rather than generic `current target`.
 - Target-core `spell_monk_guard` is registered for player ability variants `115295` and `123402`, and `SPELL_MONK_GLYPH_OF_GUARD` is `123401`.
 - Monk Guard resolves these two variants explicitly rather than depending on generic same-name ordering: if `HasActiveSpell(123402)` is true it uses the override; otherwise it falls back to active `115295`. The exact resolved ID is used for power preflight, `CanCastSpell`, and execution, and either aura ID suppresses redundant Guard use. Runtime still must prove how this fork exposes the glyph override in the live spellbook.
@@ -111,6 +114,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Chi-consuming spells feed the Tigereye Brew driver and generate stack aura `125195`.
 - Active Tigereye Brew `116740` removes 10 stacks and scales its buff from the stack aura.
 - PlayerBot checks exact aura `125195` and requests Tigereye Brew at 10 stacks. It intentionally avoids the repository generic `HasAuraStackTrigger` because that helper also imposes duration semantics not yet validated for this aura in build 18414.
+- Target core explicitly emits Combo Breaker proc auras `118864` (Tiger Palm) and `116768` (Blackout Kick). MoP-era spell data corroborates Tiger Power aura `125359`; target DBC/runtime verification of `125359` is still pending.
+- Windwalker Tiger Palm is not an unconditional default filler. The PlayerBot requests it when Tiger Power `125359` is absent or when Combo Breaker: Tiger Palm `118864` is active. This prevents a one-Chi maintenance ability from repeatedly sitting ahead of Blackout Kick in the default queue and starving stronger Chi spenders. Brewmaster's separate Tiger Palm baseline is intentionally unchanged.
 - Touch of Death is kept in the Windwalker strategy rather than the generic Monk strategy, preventing tank/healer baselines from spending the high-priority offensive resource action.
 
 ## PlayerBot resource-preflight evidence
@@ -135,7 +140,9 @@ The Monk strategy, trigger, and action names referenced by `AiFactory` and all t
 
 ## Still requiring direct runtime/DBC validation
 
+- Fortifying Brew — verify the learned player spell ID in build 18414. Target core directly scripts aura/effect `120954`; MoP-era data points to player cast `115203`, so `120954` must not be hardcoded as the cast without DBC/runtime proof.
 - Guard — verify `HasActiveSpell(115295/123402)`, glyph/no-glyph casting, power cost, cooldown, and resulting aura.
+- Tiger Power / Combo Breaker — verify live Tiger Power aura `125359`, Combo Breaker consumption, and Windwalker Tiger Palm cadence.
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195`.
 - Provoke — verify actual multi-attacker threat selection and successful taunt.
 - Detox magic — verify live magic-dispel selection and party targeting in both combat and Mistweaver non-combat recovery.
