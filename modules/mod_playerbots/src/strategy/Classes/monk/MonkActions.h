@@ -56,12 +56,14 @@ class CastTouchOfDeathAction : public CastMeleeSpellAction
 {
 public:
     CastTouchOfDeathAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "touch of death") {}
+    bool isPossible() override;
 };
 
 class CastDetoxAction : public CastCureSpellAction
 {
 public:
     CastDetoxAction(PlayerbotAI* botAI) : CastCureSpellAction(botAI, "detox") {}
+    bool isPossible() override;
 };
 
 class CastDetoxPoisonOnPartyAction : public CurePartyMemberAction
@@ -69,6 +71,7 @@ class CastDetoxPoisonOnPartyAction : public CurePartyMemberAction
 public:
     CastDetoxPoisonOnPartyAction(PlayerbotAI* botAI) : CurePartyMemberAction(botAI, "detox", DISPEL_POISON) {}
     std::string const getName() override { return "detox poison on party"; }
+    bool isPossible() override;
 };
 
 class CastDetoxDiseaseOnPartyAction : public CurePartyMemberAction
@@ -76,6 +79,7 @@ class CastDetoxDiseaseOnPartyAction : public CurePartyMemberAction
 public:
     CastDetoxDiseaseOnPartyAction(PlayerbotAI* botAI) : CurePartyMemberAction(botAI, "detox", DISPEL_DISEASE) {}
     std::string const getName() override { return "detox disease on party"; }
+    bool isPossible() override;
 };
 
 class CastKegSmashAction : public CastMeleeSpellAction
@@ -90,6 +94,7 @@ class CastGuardAction : public CastBuffSpellAction
 {
 public:
     CastGuardAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "guard") {}
+    bool isPossible() override;
 };
 
 class CastElusiveBrewAction : public CastBuffSpellAction
@@ -127,6 +132,7 @@ class CastSoothingMistOnPartyAction : public HealPartyMemberAction
 {
 public:
     CastSoothingMistOnPartyAction(PlayerbotAI* botAI) : HealPartyMemberAction(botAI, "soothing mist") {}
+    bool isPossible() override;
 };
 
 class CastRenewingMistOnPartyAction : public HealPartyMemberAction
@@ -134,6 +140,7 @@ class CastRenewingMistOnPartyAction : public HealPartyMemberAction
 public:
     CastRenewingMistOnPartyAction(PlayerbotAI* botAI) : HealPartyMemberAction(botAI, "renewing mist") {}
     Unit* GetTarget() override;
+    bool isPossible() override;
     bool isUseful() override;
 };
 
@@ -161,12 +168,14 @@ public:
     CastLifeCocoonOnPartyAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "life cocoon") {}
     std::string const GetTargetName() override { return "party member to heal"; }
     std::string const getName() override { return "life cocoon on party"; }
+    bool isPossible() override;
 };
 
 class CastRevivalAction : public CastHealingSpellAction
 {
 public:
     CastRevivalAction(PlayerbotAI* botAI) : CastHealingSpellAction(botAI, "revival") {}
+    bool isPossible() override;
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
 
@@ -174,6 +183,7 @@ class CastUpliftAction : public CastHealingSpellAction
 {
 public:
     CastUpliftAction(PlayerbotAI* botAI) : CastHealingSpellAction(botAI, "uplift") {}
+    bool isPossible() override;
     bool isUseful() override;
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
