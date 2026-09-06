@@ -45,6 +45,9 @@
         return false;
     if (a->HasUnitState(UNIT_STATE_IN_FLIGHT) || b->HasUnitState(UNIT_STATE_IN_FLIGHT))
         return false;
+    // ... both units must be allowed to enter combat
+    if (a->IsCombatDisallowed() || b->IsCombatDisallowed())
+        return false;
     if (a->IsFriendlyTo(b) || b->IsFriendlyTo(a))
         return false;
     Player const* playerA = a->GetCharmerOrOwnerPlayerOrPlayerItself();
@@ -184,13 +187,13 @@ Unit* CombatManager::GetAnyTarget() const
 bool CombatManager::SetInCombatWith(Unit* who, bool addSecondUnitSuppressed)
 {
     // Are we already in combat? If yes, refresh pvp combat
-    if (PvPCombatReference* existingPvpRef = *Trinity::Containers::MapGetValuePtr(_pvpRefs, who->GetGUID()))
+    if (PvPCombatReference* existingPvpRef = Trinity::Containers::MapGetValuePtr(_pvpRefs, who->GetGUID()))
     {
         existingPvpRef->RefreshTimer();
         existingPvpRef->Refresh();
         return true;
     }
-    if (CombatReference* existingPveRef = *Trinity::Containers::MapGetValuePtr(_pveRefs, who->GetGUID()))
+    if (CombatReference* existingPveRef = Trinity::Containers::MapGetValuePtr(_pveRefs, who->GetGUID()))
     {
         existingPveRef->Refresh();
         return true;
