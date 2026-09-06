@@ -89,9 +89,34 @@ bool CastExpelHarmAction::isPossible()
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastHealingSpellAction::isPossible();
 }
 
+bool CastTouchOfDeathAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastDetoxAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastCureSpellAction::isPossible();
+}
+
+bool CastDetoxPoisonOnPartyAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CurePartyMemberAction::isPossible();
+}
+
+bool CastDetoxDiseaseOnPartyAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CurePartyMemberAction::isPossible();
+}
+
 bool CastKegSmashAction::isPossible()
 {
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastGuardAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastBuffSpellAction::isPossible();
 }
 
 bool CastElusiveBrewAction::isUseful()
@@ -114,6 +139,11 @@ bool CastProvokeAction::isUseful()
 bool CastBreathOfFireAction::isPossible()
 {
     return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastMeleeSpellAction::isPossible();
+}
+
+bool CastSoothingMistOnPartyAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && HealPartyMemberAction::isPossible();
 }
 
 Unit* CastRenewingMistOnPartyAction::GetTarget()
@@ -145,6 +175,11 @@ Unit* CastRenewingMistOnPartyAction::GetTarget()
     }
 
     return bestTarget ? bestTarget : priorityTarget;
+}
+
+bool CastRenewingMistOnPartyAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && HealPartyMemberAction::isPossible();
 }
 
 bool CastRenewingMistOnPartyAction::isUseful()
@@ -209,6 +244,21 @@ bool CastSurgingMistOnPartyAction::isUseful()
     }
 
     return HealPartyMemberAction::isUseful();
+}
+
+bool CastLifeCocoonOnPartyAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastSpellAction::isPossible();
+}
+
+bool CastRevivalAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastHealingSpellAction::isPossible();
+}
+
+bool CastUpliftAction::isPossible()
+{
+    return HasPowerForSpell(bot, AI_VALUE2(uint32, "spell id", spell)) && CastHealingSpellAction::isPossible();
 }
 
 bool CastUpliftAction::isUseful()
