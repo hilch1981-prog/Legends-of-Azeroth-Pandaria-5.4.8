@@ -28,7 +28,7 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 | Surging Mist | 116694 | target-core script casts instantly onto the current Soothing Mist channel target when channeling | active cast confirmed |
 | Enveloping Mist | 124682 | target-core script targets the current Soothing Mist channel target when channeling | active cast confirmed |
 | Uplift | 116670 | target-core Uplift target filter operates on caster-owned Renewing Mist | active cast confirmed |
-| Mana Tea | 115294 | `// 115294 - Mana Tea`; consumes Mana Tea stacks over channel ticks | active cast confirmed |
+| Mana Tea | 115294 / 123761 | `// 115294 - Mana Tea` channel consumes stack `115867`; `// 123761 - Mana Tea` is the glyphed instant variant with an explicit two-stack `CheckCast` gate | active variants confirmed; live spellbook override behavior pending |
 | Life Cocoon | 116849 | target-core Life Cocoon implementation | active cast confirmed |
 | Revival | 115310 | target-core Revival raid-area healing logic | active cast confirmed |
 | Tigereye Brew | 116740 | `// 116740 - Tigereye Brew`; consumes 10 Tigereye Brew stacks when present | active cast confirmed |
@@ -104,7 +104,8 @@ These IDs are backed by an explicit target-core spell-script comment/class or by
 - Uplift `116670` builds its heal target list only from units carrying caster-owned Renewing Mist. Thunder Focus Tea controls whether the refresh effect is applied; the Uplift heal target set remains the caster's Renewing Mist targets.
 - PlayerBot mirrors those semantics conservatively: Renewing Mist prefers a valid group player not already carrying this Monk's `119611`, and Uplift is considered useful only when at least two injured group players carry this Monk's `119611`.
 - Repository `PartyMemberToHeal::Check` accepts same-map LOS targets within `< healDistance * 2`; the Monk Renewing Mist fallback uses the same range/LOS envelope.
-- Mana Tea `115294` consumes `115867` stacks over periodic ticks; the Mana Tea driver generates stacks from Chi consumption while in Stance of the Wise Serpent `115070`.
+- Normal Mana Tea `115294` consumes one `115867` stack immediately when its aura is applied and then one stack per periodic tick. The target-core glyphed Mana Tea `123761` is an instant spell whose `CheckCast` explicitly requires at least two `115867` stacks.
+- PlayerBot resolves Mana Tea variants explicitly from the active spellbook, preferring `123761` when exposed and falling back to `115294`; the normal channel is useful from one stack, while the glyphed variant keeps the target-core two-stack minimum. This avoids both an incorrect universal two-stack gate and generic same-name override ambiguity.
 - Target-core `spell_monk_muscle_memory` is wired to Jab spell variants and, when the Monk knows passive `139598`, casts exact proc aura `139597`. The Spinning Crane Kick damage script can also grant `139597` after three hits under the same passive check.
 - Mistweaver PlayerBot therefore no longer keeps Tiger Palm as an unconditional default filler. When party healing does not need higher-priority action, Jab is the melee fallback; exact Muscle Memory aura `139597` triggers Tiger Palm at default-level relevance. This preserves Chi for Enveloping Mist/Uplift during healing pressure while retaining the repository-confirmed Jab -> Muscle Memory -> Tiger Palm loop.
 - Revival `115310` is a raid-area heal and excludes minor guardians from its target list.
@@ -134,9 +135,9 @@ This gate covers the main Monk resource-sensitive combat/heal actions, including
 
 `SpellIdValue` searches the bot's active learned, non-passive spell map for an exact requested spell name. For each same-name candidate it stores the ID in an ordered set and iterates the set in reverse. If a candidate has no numeric rank text, it assigns that ID to `castSpellId` and continues. Therefore, when multiple unranked same-name spells are simultaneously active, the loop can finish on the **numerically lowest** matching ID rather than a semantic spellbook override.
 
-`PlayerbotAI::CanCastSpell(std::string, ...)` and `PlayerbotAI::CastSpell(std::string, ...)` both consume this `"spell id"` value, so the ambiguity affects both preflight and execution. The fix is intentionally Monk-local: Guard checks `HasActiveSpell(123402)` first and `HasActiveSpell(115295)` second, then uses the exact returned ID. Global `SpellIdValue` is not changed because its ordering behavior may be relied upon by unrelated legacy/ranked spell paths.
+`PlayerbotAI::CanCastSpell(std::string, ...)` and `PlayerbotAI::CastSpell(std::string, ...)` both consume this `"spell id"` value, so the ambiguity affects both preflight and execution. The fix is intentionally Monk-local: Guard checks `HasActiveSpell(123402)` first and `HasActiveSpell(115295)` second, while Mana Tea checks `HasActiveSpell(123761)` first and `HasActiveSpell(115294)` second. Each action then uses the exact returned ID for its own legality/execution path. Global `SpellIdValue` is not changed because its ordering behavior may be relied upon by unrelated legacy/ranked spell paths.
 
-This does not yet claim the live glyph path is fully validated. If the core exposes only normal `115295` in `PlayerSpellMap` and performs the `123402` override elsewhere at cast time, the fallback preserves normal behavior. If it exposes `123402` as an active spellbook replacement, the Monk action selects it deterministically.
+This does not yet claim the live glyph paths are fully validated. If the core exposes only the normal spell in `PlayerSpellMap` and performs an override elsewhere at cast time, the normal fallback remains available. If it exposes the override as an active spellbook replacement, the Monk action selects it deterministically. Guard and Mana Tea glyph/no-glyph behavior remain runtime verification items.
 
 ## Static factory/key audit
 
@@ -146,6 +147,7 @@ The Monk strategy, trigger, and action names referenced by `AiFactory` and all t
 
 - Fortifying Brew — verify the learned player spell ID in build 18414. Target core directly scripts aura/effect `120954`; MoP-era data points to player cast `115203`, so `120954` must not be hardcoded as the cast without DBC/runtime proof.
 - Guard — verify `HasActiveSpell(115295/123402)`, glyph/no-glyph casting, power cost, cooldown, and resulting aura.
+- Mana Tea — verify live `HasActiveSpell(115294/123761)` behavior with and without the glyph, one-stack normal channel use, two-stack glyphed use, stack consumption, and channel/instant cadence.
 - Muscle Memory — verify live passive `139598`, proc aura `139597` generation/consumption, the expected mana-return interaction, and Mistweaver Jab/Tiger Palm cadence.
 - Tiger Power / Combo Breaker — verify live Tiger Power aura `125359`, Combo Breaker consumption, and Windwalker Tiger Palm cadence.
 - Tigereye Brew — prove action-name lookup resolves learned active `116740` and live stack aura is `125195`.
