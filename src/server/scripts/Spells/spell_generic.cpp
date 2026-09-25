@@ -672,7 +672,6 @@ class spell_gen_clone : public SpellScript
         }
         else
         {
-            OnEffectHitTarget += SpellEffectFn(spell_gen_clone::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
             OnEffectHitTarget += SpellEffectFn(spell_gen_clone::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
         }
     }
@@ -2349,10 +2348,7 @@ class spell_gen_replenishment : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spellInfo*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_REPLENISHMENT) ||
-                    !sSpellMgr->GetSpellInfo(SPELL_INFINITE_REPLENISHMENT))
-                    return false;
-                return true;
+                return sSpellMgr->GetSpellInfo(SPELL_REPLENISHMENT);
             }
 
             bool Load() override
@@ -4395,7 +4391,7 @@ class spell_gen_portal_to_isle_of_thunder : public SpellScript
             }
             else
             {
-                TC_LOG_ERROR("shit", "spell_gen_portal_to_isle_of_thunder: Player %u, team %u, spell %u.", player->GetGUID().GetCounter(), player->GetTeam(), GetSpellInfo()->Id);
+                TC_LOG_ERROR("shit", "spell_gen_portal_to_isle_of_thunder: Player {}, team {}, spell {}.", player->GetGUID().GetCounter(), player->GetTeam(), GetSpellInfo()->Id);
                 return;
             }
             dest._position.m_mapId = 1064;
