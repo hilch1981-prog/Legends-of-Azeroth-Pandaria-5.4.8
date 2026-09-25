@@ -19,6 +19,9 @@
 #include "AreaBoundary.h"
 #include "CreatureAIImpl.h"
 #include "Creature.h"
+#include "DBCEnums.h"
+#include "PetDefines.h"
+#include "TemporarySummon.h"
 #include "World.h"
 #include "SpellMgr.h"
 #include "Vehicle.h"
@@ -31,9 +34,88 @@
 #include "CellImpl.h"
 #include "InstanceScript.h"
 
+// Distract creature, if player gets too close while stealthed/prowling
+void CreatureAI::TriggerAlert(Unit const* who) const
+{
+    // If there's no target, or target isn't a player do nothing
+    if (!who || who->GetTypeId() != TYPEID_PLAYER)
+        return;
+
+    // If this unit isn't an NPC, is already distracted, is fighting, is confused, stunned or fleeing, do nothing
+    if (me->GetTypeId() != TYPEID_UNIT || IsEngaged() || me->HasUnitState(UNIT_STATE_CONFUSED | UNIT_STATE_STUNNED | UNIT_STATE_FLEEING | UNIT_STATE_DISTRACTED))
+        return;
+
+    // Only alert for hostiles that can actually engage the target.
+    if (me->IsCivilian() || me->HasReactState(REACT_PASSIVE) || me->IsImmuneToPC() || !me->IsHostileTo(who) || !me->_IsTargetAcceptable(who))
+        return;
+
+    // Send alert sound (if any) for this creature
+    me->SendAIReaction(AI_REACTION_ALERT);
+
+    // Face the unit (stealthed player) and set distracted state for 5 seconds
+    me->GetMotionMaster()->MoveDistract(5 * IN_MILLISECONDS, me->GetAbsoluteAngle(who));
+}
+
+namespace
+{
+bool ShouldFollowOnSpawn(SummonPropertiesEntry const* properties)
+{
+    if (!properties)
+        return false;
+
+    switch (properties->Category)
+    {
+        case SUMMON_CATEGORY_PET:
+            return true;
+        case SUMMON_CATEGORY_WILD:
+        case SUMMON_CATEGORY_ALLY:
+        case SUMMON_CATEGORY_UNK:
+            if (properties->Flags & SUMMON_PROP_FLAG_UNK10)
+                return true;
+
+            // Guides. They have their own movement
+            if (properties->Flags & SUMMON_PROP_FLAG_UNK14)
+                return false;
+
+            switch (static_cast<SummonType>(properties->Type))
+            {
+                case SUMMON_TYPE_PET:
+                case SUMMON_TYPE_GUARDIAN:
+                case SUMMON_TYPE_MINION:
+                case SUMMON_TYPE_MINIPET:
+                case SUMMON_TYPE_GUARDIAN2:
+                    return true;
+                default:
+                    return false;
+            }
+        default:
+            return false;
+    }
+}
+}
+
+void CreatureAI::JustAppeared()
+{
+    if (!IsEngaged())
+    {
+        if (TempSummon* summon = me->ToTempSummon())
+        {
+            // Only apply this to specific types of summons
+            if (!summon->GetVehicle() && ShouldFollowOnSpawn(summon->m_Properties) && summon->CanFollowOwner())
+            {
+                if (Unit* owner = summon->GetCharmerOrOwner())
+                {
+                    summon->GetMotionMaster()->Clear();
+                    summon->GetMotionMaster()->MoveFollow(owner, PET_FOLLOW_DIST, summon->GetFollowAngle());
+                }
+            }
+        }
+    }
+}
+
 CreatureAI::CreatureAI(Creature* creature) : UnitAI(creature), me(creature), _boundary(nullptr), _negateBoundary(false), m_MoveInLineOfSight_locked(false), m_canSeeEvenInPassiveMode(false), _isEngaged(false)
 { 
-
+ 
 }
 
 CreatureAI::~CreatureAI() 
@@ -73,7 +155,7 @@ void CreatureAI::DoZoneInCombat(Creature* creature /*= NULL*/, float maxRangeToN
     Map* map = creature->GetMap();
     if (!map->IsDungeon())                                  //use IsDungeon instead of Instanceable, in case battlegrounds will be instantiated
     {
-        TC_LOG_ERROR("misc", "DoZoneInCombat call for map that isn't an instance (creature entry = %d)", creature->GetTypeId() == TYPEID_UNIT ? creature->ToCreature()->GetEntry() : 0);
+        TC_LOG_ERROR("misc", "DoZoneInCombat call for map that isn't an instance (creature entry = {})", creature->GetTypeId() == TYPEID_UNIT ? creature->ToCreature()->GetEntry() : 0);
         return;
     }
 
@@ -98,7 +180,7 @@ void CreatureAI::DoZoneInCombat(Creature* creature /*= NULL*/, float maxRangeToN
     // If it can't find a suitable attack target then we should error out.
     if (!creature->HasReactState(REACT_PASSIVE) && !creature->GetVictim())
     {
-        TC_LOG_ERROR("misc", "DoZoneInCombat called for creature that has empty threat list (creature entry = %u)", creature->GetEntry());
+        TC_LOG_ERROR("misc", "DoZoneInCombat called for creature that has empty threat list (creature entry = {})", creature->GetEntry());
         return;
     }
 
@@ -195,7 +277,7 @@ void CreatureAI::MoveInLineOfSight_Safe(Unit* who)
 
 void CreatureAI::SpellRequiresMovement(Unit* /*target*/, Spell* spell)
 {
-    TC_LOG_ERROR("shitlog", "CreatureAI::SpellRequiresMovement me %u",  me->GetEntry());
+    TC_LOG_ERROR("shitlog", "CreatureAI::SpellRequiresMovement me {}",  me->GetEntry());
 
     spell->finish(false);
     delete spell;
@@ -222,7 +304,7 @@ void CreatureAI::EnterEvadeMode(EvadeReason why)
     if (!_EnterEvadeMode(why))
         return;
 
-    TC_LOG_DEBUG("entities.unit", "Creature %u enters evade mode.", me->GetEntry());
+    TC_LOG_DEBUG("entities.unit", "Creature {} enters evade mode.", me->GetEntry());
 
     if (!me->GetVehicle()) // otherwise me will be in evade mode forever
     {
@@ -261,10 +343,10 @@ void CreatureAI::SetGazeOn(Unit* target)
     }
 }
 
-void CreatureAI::JustEnteredCombat(Unit* victim)
+void CreatureAI::JustEnteredCombat(Unit* who)
 {
-    UnitAI::JustEnteredCombat(victim);
-    EngagementStart(victim);
+    if (!IsEngaged() && !me->CanHaveThreatList())
+        EngagementStart(who);
 }
 
 void CreatureAI::EngagementStart(Unit* who)
@@ -298,7 +380,7 @@ bool CreatureAI::CheckInRoom()
     if (IsInBoundary())
         return true;
 
-    TC_LOG_DEBUG("scripts", "Creature %s (unit %s) has left its designated room area!", me->GetName().c_str(), me->GetGUID().ToString().c_str());
+    TC_LOG_DEBUG("scripts", "Creature {} (unit {}) has left its designated room area!", me->GetName().c_str(), me->GetGUID().ToString().c_str());
     EnterEvadeMode();
     return false;
 }
@@ -543,6 +625,7 @@ void VehicleAIBase::CheckConditions(uint32 const diff)
                         //if (!sConditionMgr->IsObjectMeetToConditions(player, m_vehicleBase, conditions))
                         if (!sConditionMgr->IsObjectMeetingNotGroupedConditions(CONDITION_SOURCE_TYPE_CREATURE_TEMPLATE_VEHICLE, m_vehicleBase->GetEntry(), player, m_vehicleBase))
                         {
+
                             player->ExitVehicle();
                             return;//check other pessanger in next tick
                         }
@@ -642,6 +725,8 @@ Creature* SummonablePremiumNpcAI::OpenGossip(PlayerOrChatHandler player, Creatur
     data.WriteByteSeq(guid[6]);
     data.WriteByteSeq(guid[2]);
 
-    player->GetSession()->HandleGossipHelloOpcode(data);
+    WorldPackets::NPC::GossipHello gossipHello(std::move(data));
+    gossipHello.Read();
+    player->GetSession()->HandleGossipHelloOpcode(gossipHello);
     return creature;
 }
