@@ -123,7 +123,7 @@ void RandomMovementGenerator<Creature>::_setRandomLocation(Creature* creature)
 
     //Call for creature group update
     if (creature->GetFormation() && creature->GetFormation()->GetLeader() == creature)
-        creature->GetFormation()->LeaderMoveTo(destX, destY, destZ);
+        creature->GetFormation()->LeaderStartedMoving();
 }
 
 template<>
@@ -174,8 +174,9 @@ bool RandomMovementGenerator<Creature>::DoUpdate(Creature* creature, const uint3
 }
 
 template<>
-bool RandomMovementGenerator<Creature>::GetResetPosition(Creature* creature, float& x, float& y, float& z)
+bool RandomMovementGenerator<Creature>::GetResetPosition(Unit* owner, float& x, float& y, float& z)
 {
+    Creature* creature = owner->ToCreature();
     float radius;
     creature->GetRespawnPosition(x, y, z, NULL, &radius);
 

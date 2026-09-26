@@ -661,7 +661,7 @@ class spell_rog_deadly_poison : public SpellScriptLoader
                             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(enchant->SpellID[s]);
                             if (!spellInfo)
                             {
-                                TC_LOG_ERROR("spells", "Player::CastItemCombatSpell Enchant %i, player (Name: %s, GUID: %u) cast unknown spell %i",
+                                TC_LOG_ERROR("spells", "Player::CastItemCombatSpell Enchant {}, player (Name: {}, GUID: {}) cast unknown spell {}",
                                              enchant->ID, player->GetName().c_str(), player->GetGUID().GetCounter(), enchant->SpellID[s]);
                                 continue;
                             }
@@ -2764,6 +2764,16 @@ class spell_rog_shadowstep : public SpellScript
     }
 };
 
+// 31665 - Master of Subtlety
+class spell_rog_master_of_subtlety : public AuraScript
+{
+    PrepareAuraScript(spell_rog_master_of_subtlety);
+
+    void Register() override
+    {
+    }
+};
+
 void AddSC_rogue_spell_scripts()
 {
     new spell_rog_glyph_of_expose_armor();
@@ -2843,4 +2853,5 @@ void AddSC_rogue_spell_scripts()
     new spell_script<spell_rog_distract>("spell_rog_distract");
     new spell_script<spell_rog_duration_check>("spell_rog_duration_check");
     new spell_script<spell_rog_shadowstep>("spell_rog_shadowstep");
+    new aura_script<spell_rog_master_of_subtlety>("spell_rog_master_of_subtlety");
 }
